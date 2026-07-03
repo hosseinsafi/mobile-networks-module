@@ -1,0 +1,1836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobile Networks: 5G → 6G — RAN, Radio & Baseband</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Public+Sans:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EDF1F4; --panel:#FFFFFF; --ink:#101B26; --ink2:#3D4E5C; --line:#C9D3DB;
+  --low:#C25327;   /* 700 MHz  — long wavelength, warm */
+  --mid:#0E7C6B;   /* 3.5 GHz  — teal */
+  --high:#5A4FBF;  /* 28 GHz+  — short wavelength, cool */
+  --lowbg:#F7E4DA; --midbg:#DCEEE9; --highbg:#E4E1F6;
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --disp:'Space Grotesk',system-ui,sans-serif;
+  --body:'Public Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{animation:none!important;transition:none!important}}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.62}
+a{color:var(--mid)}
+.wrap{display:grid;grid-template-columns:250px 1fr;max-width:1240px;margin:0 auto}
+/* ---------- Sidebar: the spectrum axis ---------- */
+nav#axis{position:sticky;top:0;align-self:start;height:100vh;overflow-y:auto;padding:26px 14px 40px 20px;border-right:1px solid var(--line)}
+nav#axis .brand{font-family:var(--disp);font-weight:700;font-size:15px;letter-spacing:.02em;margin-bottom:4px}
+nav#axis .brand small{display:block;font-family:var(--mono);font-weight:400;font-size:10.5px;color:var(--ink2);letter-spacing:.08em;margin-top:2px}
+.axisbar{height:5px;border-radius:3px;margin:14px 4px 16px 0;background:linear-gradient(90deg,var(--low),var(--mid) 45%,var(--high))}
+nav#axis ol{list-style:none}
+nav#axis li a{display:block;padding:5px 8px;font-size:12.8px;color:var(--ink2);text-decoration:none;border-left:2px solid transparent;border-radius:0 6px 6px 0;line-height:1.35}
+nav#axis li a .n{font-family:var(--mono);font-size:10px;color:var(--ink2);opacity:.7;margin-right:6px}
+nav#axis li a:hover{background:#fff;color:var(--ink)}
+nav#axis li a.active{border-left-color:var(--mid);background:#fff;color:var(--ink);font-weight:600}
+/* ---------- Content ---------- */
+main{padding:34px 44px 120px;min-width:0}
+section{max-width:900px;margin-bottom:86px;scroll-margin-top:24px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);display:flex;align-items:center;gap:10px}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+.eyebrow .band{width:10px;height:10px;border-radius:2px;display:inline-block}
+h1{font-family:var(--disp);font-size:40px;line-height:1.08;font-weight:700;letter-spacing:-.015em;margin:10px 0 14px}
+h2{font-family:var(--disp);font-size:27px;line-height:1.15;font-weight:700;letter-spacing:-.01em;margin:8px 0 16px}
+h3{font-family:var(--disp);font-size:18px;font-weight:700;margin:30px 0 8px}
+h4{font-family:var(--disp);font-size:15px;font-weight:700;margin:20px 0 6px}
+p{margin:0 0 13px;color:var(--ink)}
+p.lede{font-size:18px;color:var(--ink2);line-height:1.55}
+ul.tight,ol.tight{margin:0 0 14px 22px}
+ul.tight li,ol.tight li{margin-bottom:5px}
+strong{font-weight:600}
+code,.m{font-family:var(--mono);font-size:.88em;background:#fff;border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.formula{font-family:var(--mono);font-size:14px;background:#fff;border:1px solid var(--line);border-left:3px solid var(--mid);border-radius:6px;padding:12px 16px;margin:14px 0;overflow-x:auto;white-space:pre}
+/* callouts keyed to bands */
+.note{border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin:16px 0;background:var(--panel)}
+.note.low{background:var(--lowbg);border-color:#E0B9A6}
+.note.mid{background:var(--midbg);border-color:#A9D4CB}
+.note.high{background:var(--highbg);border-color:#C6C1EA}
+.note b.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:5px}
+/* tables */
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:13.5px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;text-align:left;background:var(--ink);color:#EDF1F4;padding:9px 12px;font-weight:500}
+td{padding:8px 12px;border-top:1px solid var(--line);vertical-align:top}
+tr:nth-child(even) td{background:#F7FAFB}
+td.k{font-weight:600;white-space:nowrap}
+/* widget shell */
+.widget{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin:26px 0;overflow:hidden;box-shadow:0 1px 0 rgba(16,27,38,.04)}
+.widget header{display:flex;align-items:baseline;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line);background:linear-gradient(0deg,#FAFCFD,#fff)}
+.widget header .wtag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--ink);border-radius:4px;padding:2px 7px}
+.widget header h4{margin:0;font-size:15px}
+.widget header .sub{font-size:12px;color:var(--ink2);margin-left:auto;font-family:var(--mono)}
+.wbody{display:grid;grid-template-columns:250px 1fr;min-height:200px}
+.wbody.stack{grid-template-columns:1fr}
+.wctl{padding:16px 18px;border-right:1px solid var(--line);background:#FAFCFD}
+.wbody.stack .wctl{border-right:0;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:14px 26px}
+.wout{padding:16px 18px;min-width:0}
+.ctl{margin-bottom:13px;min-width:170px}
+.ctl label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.03em;color:var(--ink2);margin-bottom:4px}
+.ctl label output{color:var(--ink);font-weight:500}
+input[type=range]{width:100%;accent-color:var(--mid)}
+select,button.wbtn{font-family:var(--mono);font-size:12px;padding:5px 9px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);width:100%}
+button.wbtn{cursor:pointer;width:auto}
+button.wbtn:hover{border-color:var(--mid);color:var(--mid)}
+button.wbtn.danger:hover{border-color:var(--low);color:var(--low)}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{flex:1;border:0;background:#fff;font-family:var(--mono);font-size:11px;padding:6px 4px;cursor:pointer;color:var(--ink2)}
+.seg button.on{background:var(--ink);color:#fff}
+canvas{display:block;width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.stat{flex:1 1 110px;background:#FAFCFD;border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+.stat .v{font-family:var(--mono);font-size:18px;font-weight:500}
+.stat .l{font-size:10.5px;font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--ink2)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;font-family:var(--mono);color:var(--ink2);margin-top:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* diagrams */
+.diagram{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin:18px 0}
+.diagram svg{width:100%;height:auto;display:block}
+.diagram figcaption{font-size:12px;font-family:var(--mono);color:var(--ink2);margin-top:8px;text-align:center}
+.detail{background:#FAFCFD;border:1px dashed var(--line);border-radius:8px;padding:12px 15px;font-size:13.5px;margin-top:10px;min-height:64px}
+.detail b{font-family:var(--mono);font-size:12px}
+/* takeaway cards */
+.takeaways{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:16px 20px;margin:22px 0}
+.takeaways h4{margin-top:0}
+.takeaways li{margin-bottom:6px}
+pre.ascii{font-family:var(--mono);font-size:12px;line-height:1.45;background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px;overflow-x:auto;margin:14px 0}
+details.gloss{border-bottom:1px solid var(--line);padding:8px 2px}
+details.gloss summary{cursor:pointer;font-weight:600;font-size:14px}
+details.gloss p{margin:6px 0 4px;font-size:13.5px;color:var(--ink2)}
+.chip{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);background:#fff;margin:0 4px 4px 0}
+.chip.low{background:var(--lowbg);border-color:#E0B9A6;color:#8A3A1B}
+.chip.mid{background:var(--midbg);border-color:#A9D4CB;color:#0A5C4F}
+.chip.high{background:var(--highbg);border-color:#C6C1EA;color:#453C99}
+/* maturity badges: deployed → standardized → study → research → speculative */
+.mat{display:inline-block;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 7px;border-radius:4px;margin:0 6px 3px 0;vertical-align:1px;border:1px solid}
+.mat.dep{background:#DCEEE9;border-color:#8FC9BD;color:#0A5C4F}     /* commercially deployed */
+.mat.std{background:#D9EAF5;border-color:#9DC6E0;color:#1B5A7E}     /* standardized / being standardized */
+.mat.study{background:#FBF0D6;border-color:#E4C878;color:#7A5A12}   /* study item / early spec */
+.mat.res{background:#F1E9FA;border-color:#CBB6E8;color:#5A3E93}     /* research direction */
+.mat.spec{background:#F4E0DA;border-color:#E0B0A0;color:#8A3A1B}    /* speculative / pre-standard */
+.matkey{display:flex;flex-wrap:wrap;gap:8px;font-size:11px;font-family:var(--mono);color:var(--ink2);margin:10px 0 4px}
+/* model-scope note under widgets */
+.mscope{border:1px solid var(--line);border-left:3px solid var(--ink2);border-radius:0 8px 8px 0;background:#FAFBFC;padding:10px 14px;margin:12px 0 2px;font-size:12.5px;color:var(--ink2);line-height:1.5}
+.mscope b{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);display:block;margin-bottom:3px}
+@media(max-width:900px){
+  .wrap{grid-template-columns:1fr}
+  nav#axis{position:relative;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:18px}
+  nav#axis ol{display:flex;flex-wrap:wrap;gap:2px}
+  main{padding:24px 18px 90px}
+  h1{font-size:30px}
+  .wbody{grid-template-columns:1fr}
+  .wctl{border-right:0;border-bottom:1px solid var(--line)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav id="axis">
+  <div class="brand">RAN / RADIO / BASEBAND<small>An interactive field manual · 4G → 6G</small></div>
+  <div class="axisbar" title="700 MHz ————— 3.5 GHz ————— 300 GHz"></div>
+  <ol>
+    <li><a href="#s0"><span class="n">00</span>Executive overview</a></li>
+    <li><a href="#s1"><span class="n">01</span>End-to-end architecture</a></li>
+    <li><a href="#s2"><span class="n">02</span>RAN fundamentals</a></li>
+    <li><a href="#s3"><span class="n">03</span>4G → 5G → 5G-A → 6G</a></li>
+    <li><a href="#s4"><span class="n">04</span>5G RAN architecture &amp; splits</a></li>
+    <li><a href="#s23"><span class="n">05</span>Synchronization &amp; timing</a></li>
+    <li><a href="#s5"><span class="n">06</span>NR air interface</a></li>
+    <li><a href="#s6"><span class="n">07</span>Spectrum &amp; propagation</a></li>
+    <li><a href="#s7"><span class="n">08</span>Antennas, mMIMO, beamforming</a></li>
+    <li><a href="#s8"><span class="n">09</span>Baseband processing</a></li>
+    <li><a href="#s24"><span class="n">10</span>RF hardware reality</a></li>
+    <li><a href="#s9"><span class="n">11</span>PHY &amp; link adaptation</a></li>
+    <li><a href="#s10"><span class="n">12</span>MAC &amp; scheduling</a></li>
+    <li><a href="#s25"><span class="n">13</span>Control plane: RRC &amp; the stack</a></li>
+    <li><a href="#s11"><span class="n">14</span>Mobility &amp; handover</a></li>
+    <li><a href="#s12"><span class="n">15</span>Coverage · capacity · interference</a></li>
+    <li><a href="#s26"><span class="n">16</span>Uplink: the limiting direction</a></li>
+    <li><a href="#s27"><span class="n">17</span>Diagnosing RAN problems (KPIs)</a></li>
+    <li><a href="#s13"><span class="n">18</span>Open RAN &amp; Cloud RAN</a></li>
+    <li><a href="#s14"><span class="n">19</span>AI/ML in the RAN</a></li>
+    <li><a href="#s15"><span class="n">20</span>Digital twin networks</a></li>
+    <li><a href="#s16"><span class="n">21</span>Use cases &amp; slicing</a></li>
+    <li><a href="#s17"><span class="n">22</span>Energy efficiency</a></li>
+    <li><a href="#s18"><span class="n">23</span>5G-Advanced &amp; 6G</a></li>
+    <li><a href="#s19"><span class="n">24</span>Non-terrestrial networks</a></li>
+    <li><a href="#s20"><span class="n">25</span>Operator case studies</a></li>
+    <li><a href="#s21"><span class="n">26</span>Glossary</a></li>
+    <li><a href="#s22"><span class="n">27</span>Key takeaways</a></li>
+    <li><a href="#s28"><span class="n">28</span>Standards &amp; references</a></li>
+  </ol>
+</nav>
+<main>
+<!-- ============ 00 EXECUTIVE OVERVIEW ============ -->
+<section id="s0">
+  <div class="eyebrow"><span class="band" style="background:linear-gradient(90deg,var(--low),var(--mid),var(--high))"></span>00 · Executive overview</div>
+  <h1>Mobile Networks from the Antenna Inward</h1>
+  <p class="lede">A mobile network is a distributed real-time signal-processing machine. Its scarcest resource is radio spectrum; its hardest constraint is physics; its most expensive mistake is deploying the wrong thing in the wrong place. This module builds your understanding from the electromagnetic wave up to the AI-driven control loops of 6G.</p>
+
+  <p>Everything in this module hangs off <strong>four resources</strong> the RAN must convert into user experience:</p>
+  <table>
+    <tr><th>Resource</th><th>Unit</th><th>Who allocates it</th><th>Fundamental limit</th></tr>
+    <tr><td class="k">Frequency</td><td>Hz (resource blocks)</td><td>Regulator → operator → scheduler</td><td>Spectrum is finite and licensed</td></tr>
+    <tr><td class="k">Time</td><td>Slots / symbols</td><td>MAC scheduler, every ~0.5 ms</td><td>Latency budget, TDD duty cycle</td></tr>
+    <tr><td class="k">Space</td><td>Beams / layers</td><td>Massive MIMO precoder</td><td>Channel rank, array aperture</td></tr>
+    <tr><td class="k">Power</td><td>Watts (dBm)</td><td>Power control, energy manager</td><td>Regulation, interference, OPEX, thermals</td></tr>
+  </table>
+
+  <p>The color system of this module encodes the spectrum itself — the same mapping physics uses, where lower frequency is "redder":</p>
+  <p>
+    <span class="chip low">LOW-BAND · 600–900 MHz · coverage</span>
+    <span class="chip mid">MID-BAND · 1.8–7 GHz · the workhorse</span>
+    <span class="chip high">HIGH-BAND · 24 GHz–1 THz · capacity &amp; sensing</span>
+  </p>
+
+  <div class="note mid"><b class="tag">How to use this module</b>
+  Each section follows the same arc: intuition → engineering reality → mathematics → deployment trade-offs. Ten interactive simulators let you move the sliders engineers actually argue about. Change one parameter at a time and predict the output before you look — that is where intuition forms.</div>
+</section>
+
+<!-- ============ 01 END-TO-END ARCHITECTURE ============ -->
+<section id="s1">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>01 · End-to-end architecture</div>
+  <h2>From a Phone to the Internet: the Whole Machine</h2>
+
+  <h3>Intuition</h3>
+  <p>Think of the network as three concentric machines. The <strong>RAN</strong> converts unreliable radio waves into reliable bit pipes — it fights physics. The <strong>transport network</strong> hauls those bits across fiber and microwave — it fights distance and cost. The <strong>core network</strong> decides who you are, what you may do, and where your packets should exit — it fights complexity and scale. Around all three sits <strong>management and orchestration</strong>, the nervous system that configures, monitors, and increasingly <em>learns</em>.</p>
+
+  <h3>The path of one packet (uplink)</h3>
+  <ol class="tight">
+    <li><strong>UE:</strong> Your phone's application writes to a socket → IP packet → PDCP ciphering → RLC segmentation → MAC multiplexing → PHY encodes it onto an OFDM waveform and transmits when the scheduler grants it resources.</li>
+    <li><strong>Radio Unit (RU):</strong> The antenna captures ~microvolts. The RU amplifies (LNA), filters, digitizes, and performs low-PHY functions (FFT, beamforming combining in a 7.2x split), then streams frequency-domain IQ samples over <strong>fronthaul</strong> (eCPRI, ~25 Gbps class, &lt;100 µs latency budget).</li>
+    <li><strong>Distributed Unit (DU):</strong> Runs high-PHY (channel estimation, equalization, LDPC decoding), MAC (HARQ, scheduling), and RLC. This is the real-time heart — its control loops run every slot (0.5 ms at 30 kHz SCS).</li>
+    <li><strong>Centralized Unit (CU):</strong> Runs PDCP/SDAP (user plane) and RRC (control plane) over <strong>midhaul</strong> (F1 interface, ~1–10 ms tolerable). One CU typically serves many DUs.</li>
+    <li><strong>Core (5GC):</strong> The UPF forwards the user plane; AMF/SMF handle mobility and sessions over <strong>backhaul</strong> (NG interface). The UPF may sit in a regional data center — or at the <strong>edge cloud</strong> a few km away when latency matters.</li>
+    <li><strong>Internet / cloud:</strong> The UPF's N6 interface is the door to the world.</li>
+  </ol>
+
+  <div class="widget">
+    <header><span class="wtag">Widget 01</span><h4>Network Architecture Explorer</h4><span class="sub">click any element</span></header>
+    <div class="wbody stack">
+      <div class="wout">
+        <svg id="archSvg" viewBox="0 0 940 300" font-family="IBM Plex Mono,monospace">
+          <defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="#3D4E5C"/></marker></defs>
+          <!-- latency bands -->
+          <text x="120" y="288" font-size="10" fill="#8a97a1" text-anchor="middle">fronthaul &lt;100 µs</text>
+          <text x="330" y="288" font-size="10" fill="#8a97a1" text-anchor="middle">midhaul ~1–10 ms</text>
+          <text x="560" y="288" font-size="10" fill="#8a97a1" text-anchor="middle">backhaul ~1–30 ms</text>
+          <!-- links -->
+          <g stroke="#3D4E5C" stroke-width="1.5" marker-end="url(#arr)">
+            <line x1="78" y1="150" x2="108" y2="150"/><line x1="188" y1="150" x2="228" y2="150"/>
+            <line x1="308" y1="150" x2="358" y2="150"/><line x1="438" y1="150" x2="488" y2="150"/>
+            <line x1="618" y1="150" x2="668" y2="150"/><line x1="798" y1="150" x2="838" y2="150"/>
+            <line x1="553" y1="120" x2="553" y2="82" marker-end="url(#arr)"/>
+          </g>
+          <text x="205" y="142" font-size="9" fill="#8a97a1">eCPRI</text>
+          <text x="325" y="142" font-size="9" fill="#8a97a1">F1</text>
+          <text x="456" y="142" font-size="9" fill="#8a97a1">NG</text>
+          <!-- nodes (data-k keys into JS dictionary) -->
+          <g class="anode" data-k="ue"><rect x="18" y="122" width="60" height="56" rx="9" fill="#fff" stroke="#101B26" stroke-width="1.4"/><text x="48" y="147" font-size="11" text-anchor="middle" font-weight="600">UE</text><text x="48" y="163" font-size="8.5" text-anchor="middle" fill="#3D4E5C">phone/IoT</text></g>
+          <g class="anode" data-k="ru"><rect x="108" y="122" width="80" height="56" rx="9" fill="#F7E4DA" stroke="#C25327" stroke-width="1.4"/><text x="148" y="147" font-size="11" text-anchor="middle" font-weight="600">RU + antenna</text><text x="148" y="163" font-size="8.5" text-anchor="middle" fill="#8A3A1B">low-PHY · RF</text></g>
+          <g class="anode" data-k="du"><rect x="228" y="122" width="80" height="56" rx="9" fill="#DCEEE9" stroke="#0E7C6B" stroke-width="1.4"/><text x="268" y="147" font-size="11" text-anchor="middle" font-weight="600">DU</text><text x="268" y="163" font-size="8.5" text-anchor="middle" fill="#0A5C4F">hi-PHY·MAC·RLC</text></g>
+          <g class="anode" data-k="cu"><rect x="358" y="122" width="80" height="56" rx="9" fill="#DCEEE9" stroke="#0E7C6B" stroke-width="1.4"/><text x="398" y="147" font-size="11" text-anchor="middle" font-weight="600">CU</text><text x="398" y="163" font-size="8.5" text-anchor="middle" fill="#0A5C4F">PDCP·SDAP·RRC</text></g>
+          <g class="anode" data-k="core"><rect x="488" y="122" width="130" height="56" rx="9" fill="#E4E1F6" stroke="#5A4FBF" stroke-width="1.4"/><text x="553" y="147" font-size="11" text-anchor="middle" font-weight="600">5G Core</text><text x="553" y="163" font-size="8.5" text-anchor="middle" fill="#453C99">AMF·SMF·UPF</text></g>
+          <g class="anode" data-k="edge"><rect x="493" y="30" width="120" height="52" rx="9" fill="#fff" stroke="#5A4FBF" stroke-dasharray="4 3" stroke-width="1.3"/><text x="553" y="52" font-size="10.5" text-anchor="middle" font-weight="600">Edge cloud</text><text x="553" y="68" font-size="8.5" text-anchor="middle" fill="#453C99">local UPF · MEC apps</text></g>
+          <g class="anode" data-k="net"><rect x="668" y="122" width="130" height="56" rx="9" fill="#fff" stroke="#101B26" stroke-width="1.4"/><text x="733" y="147" font-size="11" text-anchor="middle" font-weight="600">Internet / DC</text><text x="733" y="163" font-size="8.5" text-anchor="middle" fill="#3D4E5C">cloud services</text></g>
+          <g class="anode" data-k="mano"><rect x="838" y="112" width="86" height="76" rx="9" fill="#101B26" stroke="#101B26"/><text x="881" y="142" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="600">MANO /</text><text x="881" y="157" font-size="10.5" text-anchor="middle" fill="#fff" font-weight="600">SMO</text><text x="881" y="173" font-size="8" text-anchor="middle" fill="#C9D3DB">observes all</text></g>
+        </svg>
+        <div class="detail" id="archDetail"><b>Click a block.</b> Each element shows its function, its latency budget, and what breaks if it is mis-dimensioned.</div>
+      </div>
+    </div>
+    <div class="mscope"><b>Model scope</b>A conceptual map of logical functions and where they tend to live. Real placement depends on transport design, latency/reliability targets, vendor implementation and site economics — the distances and budgets here are illustrative, not planning figures.</div>
+  </div>
+
+  <h3>Engineering reality: latency budgets shape geography</h3>
+  <p>The functional split you choose shapes where boxes can physically live. For low-layer splits such as 7.2x, the DU usually needs to be <strong>close to the RU — often within single-digit to a few tens of kilometres</strong> — because the fronthaul one-way latency budget (driven by HARQ/scheduling timing) plus packetization, switching, sync distribution and vendor implementation eat the available margin quickly. PDCP tolerates milliseconds, so the CU can typically sit 100+ km away in a regional cloud. Very low-latency use cases <em>may</em> pull a local UPF to the edge, but end-to-end latency depends on radio scheduling, processing delay, transport, application location and the actual reliability/latency target — not fiber propagation alone (~5 µs/km is only one term in the budget). The right question is rarely "is it 1 ms?" but "does this service <em>truly</em> need sub-5 ms or sub-1 ms, and at what reliability?"</p>
+
+  <div class="note low"><b class="tag">Trade-off</b>
+  Centralize functions → pooling gains, easier coordination, cheaper operations. Distribute functions → lower latency, lower transport cost, better survivability. Every architecture decision in this module is a point on this axis.</div>
+</section>
+<!-- ============ 02 RAN FUNDAMENTALS ============ -->
+<section id="s2">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>02 · RAN fundamentals</div>
+  <h2>What the RAN Actually Does</h2>
+
+  <h3>Intuition</h3>
+  <p>The RAN's job is to run a fair, fast auction for a hostile shared medium. Thousands of devices want the same spectrum at the same time, the channel to each of them changes every few milliseconds, and users move. The RAN solves this with a control loop: <em>measure the channel → decide who transmits what, where, and how robustly → transmit → learn from errors → repeat, 2,000 times per second.</em></p>
+
+  <h3>Anatomy of a cell site</h3>
+  <ul class="tight">
+    <li><strong>Cell site:</strong> the physical location — tower, rooftop, or street pole — with power, cooling, transport, and antennas.</li>
+    <li><strong>Sector:</strong> most macro sites split 360° into three 120° sectors. Each sector is one or more <strong>cells</strong> (one per carrier frequency).</li>
+    <li><strong>Antenna:</strong> passive panels (fed by an external radio) or <strong>active antenna units</strong> (AAU) where 32–64 transceivers are integrated behind the radome for massive MIMO.</li>
+    <li><strong>Radio unit:</strong> converts between digital baseband samples and RF watts. Contains PAs, LNAs, filters, DACs/ADCs. Consumes most of the site's power.</li>
+    <li><strong>Baseband unit (BBU/DU):</strong> the digital signal-processing engine — scheduling, coding, MIMO processing.</li>
+  </ul>
+
+  <h3>The six core RAN functions</h3>
+  <table>
+    <tr><th>Function</th><th>Timescale</th><th>What it decides</th><th>Failure symptom</th></tr>
+    <tr><td class="k">Scheduling</td><td>per slot (0.5 ms)</td><td>Which UE gets which resource blocks</td><td>Congestion, unfair throughput</td></tr>
+    <tr><td class="k">Link adaptation</td><td>per slot–10 ms</td><td>Modulation &amp; coding per UE</td><td>High BLER or wasted capacity</td></tr>
+    <tr><td class="k">Beamforming</td><td>per slot</td><td>Spatial direction of energy</td><td>Weak signal, inter-user interference</td></tr>
+    <tr><td class="k">Power control</td><td>ms–100 ms</td><td>UL transmit power per UE</td><td>Interference, drained batteries</td></tr>
+    <tr><td class="k">Handover / mobility</td><td>100 ms–s</td><td>Which cell serves a moving UE</td><td>Drops, ping-pong</td></tr>
+    <tr><td class="k">Admission / load control</td><td>s–min</td><td>Accept new bearers? Shift load?</td><td>Cell overload, SLA breach</td></tr>
+  </table>
+
+  <h3>Cell types: a deployment taxonomy</h3>
+  <table>
+    <tr><th>Type</th><th>Range</th><th>Power</th><th>Purpose</th><th>Typical band</th></tr>
+    <tr><td class="k">Macro</td><td>1–30 km</td><td>20–320 W</td><td>Blanket coverage &amp; capacity umbrella</td><td>Low + mid</td></tr>
+    <tr><td class="k">Small cell (micro/pico)</td><td>50–500 m</td><td>0.25–10 W</td><td>Hotspot capacity, coverage infill</td><td>Mid + mmWave</td></tr>
+    <tr><td class="k">Indoor (DAS / femto)</td><td>10–100 m</td><td>mW–W</td><td>Buildings that mid-band cannot penetrate</td><td>Mid</td></tr>
+    <tr><td class="k">Private network</td><td>site-wide</td><td>varies</td><td>Enterprise-owned 5G: factories, ports, mines — dedicated spectrum (e.g. CBRS, n77 local licences), local core, guaranteed SLA</td><td>Mid</td></tr>
+    <tr><td class="k">Neutral host</td><td>venue</td><td>varies</td><td>One infrastructure shared by multiple operators (stadiums, airports, tunnels) — solves the "three operators, one rooftop" problem via MOCN/MORAN sharing</td><td>All</td></tr>
+  </table>
+
+  <div class="note mid"><b class="tag">Systems thinking</b>
+  Coverage, capacity, and interference are one coupled system, not three problems. Raising power to fix coverage raises interference into the neighbor cell, which lowers its SINR, which lowers its capacity, which pushes its users to transmit longer, which raises interference back at you. Section 15 lets you feel this loop with a simulator.</div>
+</section>
+
+<!-- ============ 03 GENERATIONS ============ -->
+<section id="s3">
+  <div class="eyebrow"><span class="band" style="background:linear-gradient(90deg,var(--low),var(--high))"></span>03 · Generations</div>
+  <h2>4G → 5G → 5G-Advanced → 6G</h2>
+
+  <h3>Intuition</h3>
+  <p>Each generation is best understood by what it made <em>programmable</em>. 4G made the transport of IP packets programmable (flat, all-IP architecture). 5G made the <em>network itself</em> programmable (service-based core, slicing, functional splits). 5G-Advanced makes the network <em>learnable</em> (AI/ML in the air interface and control loops). 6G aims to make it <em>self-designing and sensing</em> — the network as a distributed AI and a distributed radar at once.</p>
+
+  <h4>The 5G deployment path: NSA vs SA</h4>
+  <p><strong>NSA (Non-Standalone, Option 3x):</strong> NR carriers anchor to an LTE cell and the 4G EPC core via <strong>EN-DC</strong> (E-UTRA–NR Dual Connectivity). The <strong>LTE anchor</strong> carries the RRC control plane and mobility; the user plane is split so traffic can flow over LTE, NR, or both. This let operators light up 5G radios years before 5G cores were ready — which is exactly why <em>early 5G often felt like "faster 4G" rather than a new architecture</em>: the throughput jumped, but the network underneath was still EPC with an NR speed booster bolted on.</p>
+  <p><strong>SA (Standalone, Option 2):</strong> the gNB connects directly to the <strong>5GC</strong>, with NR carrying the control plane. This is where 5G stops being a radio upgrade and becomes a platform: native <strong>network slicing</strong>, lower core-path latency, <strong>VoNR</strong>, <strong>RedCap</strong>, better private/enterprise networking, cleaner automation hooks (NWDAF, exposure), and a clean runway to 5G-Advanced. The trade is that SA is slower and more complex to roll out — a new core, new interworking, VoNR maturity, and device support all have to land together.</p>
+  <p><strong>Operator implication:</strong> most operators that launched NSA first now run a multi-year NSA→SA migration. NSA is best read as a <em>transitional</em> configuration that monetized 5G radio early; SA is the <em>long-term platform</em>. The two coexist for years, and devices/features are gated by which core a user is actually camped on.</p>
+  <table>
+    <tr><th>Feature</th><th>5G NSA</th><th>5G SA</th></tr>
+    <tr><td class="k">Core</td><td>4G EPC</td><td>5G Core (SBA)</td></tr>
+    <tr><td class="k">Control anchor</td><td>LTE (EN-DC)</td><td>NR</td></tr>
+    <tr><td class="k">Deployment speed</td><td>Faster (reuse EPC)</td><td>Slower, more complex</td></tr>
+    <tr><td class="k">Network slicing</td><td>Limited / not full</td><td>Native support</td></tr>
+    <tr><td class="k">Latency</td><td>Improved mainly via radio</td><td>Radio + core improvements possible</td></tr>
+    <tr><td class="k">VoNR</td><td>Not native (voice via LTE/VoLTE)</td><td>Supported</td></tr>
+    <tr><td class="k">RedCap / private 5G</td><td>Constrained</td><td>Full feature set</td></tr>
+    <tr><td class="k">Long-term role</td><td>Transitional</td><td>Main 5G platform</td></tr>
+  </table>
+
+  <table>
+    <tr><th></th><th style="color:#F5B79E">4G LTE(-A)</th><th style="color:#9EDCD0">5G (Rel-15/16)</th><th style="color:#9EDCD0">5G-Advanced (Rel-18/19/20)</th><th style="color:#CCC5F5">6G (Rel-21+, ~2030)</th></tr>
+    <tr><td class="k">Architecture</td><td>eNB + EPC, flat IP</td><td>gNB (CU/DU/RU) + SBA core, slicing</td><td>+ AI-native functions, NES, RedCap eXtensions</td><td>AI-native E2E, sensing-native, cell-free candidate, subnetwork of subnetworks</td></tr>
+    <tr><td class="k">Peak rate</td><td>~1 Gbps (CA)</td><td>~10–20 Gbps</td><td>~20+ Gbps, better cell-edge &amp; UL</td><td>100 Gbps–1 Tbps targets</td></tr>
+    <tr><td class="k">User-plane latency</td><td>~10–20 ms</td><td>~1–4 ms (URLLC ~1 ms)</td><td>&lt;1 ms deterministic options</td><td>0.1 ms targets, in-network computing</td></tr>
+    <tr><td class="k">Spectrum</td><td>&lt;6 GHz FDD/TDD, 20 MHz carriers</td><td>FR1 (≤7.125 GHz) + FR2 (24–52 GHz), 100–400 MHz carriers</td><td>+ FR3 study (7–24 GHz), NR-NTN bands</td><td>7–15 GHz "golden" mid-band, sub-THz (100–300 GHz), joint sensing spectrum</td></tr>
+    <tr><td class="k">Radio interface</td><td>OFDM, 15 kHz only, Turbo codes</td><td>Scalable numerology, LDPC+Polar, beam-centric, mini-slots</td><td>AI/ML-assisted CSI, beam prediction, SBFD study</td><td>Candidate: AI-designed waveforms, semantic coding, ISAC waveforms</td></tr>
+    <tr><td class="k">Core</td><td>EPC (MME/SGW/PGW)</td><td>5GC service-based (AMF/SMF/UPF…)</td><td>+ NWDAF analytics everywhere, edge-native</td><td>Distributed, AI-orchestrated, compute-network convergence</td></tr>
+    <tr><td class="k">Use cases</td><td>MBB, VoLTE</td><td>eMBB, URLLC, mMTC, FWA</td><td>XR, RedCap IoT, positioning, passive IoT (ambient)</td><td>Holographic/immersive, digital-twin sync, ubiquitous sensing, robot swarms</td></tr>
+    <tr><td class="k">RAN complexity</td><td>Monolithic eNB</td><td>Disaggregated, virtualized options</td><td>+ RIC apps in production</td><td>Fully cloud-native, hardware-abstracted</td></tr>
+    <tr><td class="k">Automation / AI</td><td>SON (rules)</td><td>Early ML (rApps)</td><td>AI/ML standardized in air interface (Rel-18 CSI, beam, positioning)</td><td>AI-native: learning replaces hand-designed algorithms where it wins</td></tr>
+    <tr><td class="k">Energy</td><td>Not a design goal</td><td>Sleep modes, lean carrier</td><td>Network Energy Saving (NES) work item, on-demand SSB</td><td>Zero-energy devices, energy as a first-class KPI</td></tr>
+  </table>
+
+  <div class="note high"><b class="tag">Maturity check</b>
+  Committed and shipping: 5G-A MIMO evolution, RedCap, NES, NTN. Emerging (specified, early deployments): AI/ML air interface, ISAC study→work items. Speculative (pre-standard research): semantic communication, cell-free at scale, sub-THz access, RIS at scale. Calibrating "what is real" is itself an expert skill — Section 23 maps it interactively.</div>
+</section>
+<!-- ============ 04 5G RAN ARCHITECTURE ============ -->
+<section id="s4">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>04 · 5G RAN architecture</div>
+  <h2>Disaggregating the gNodeB: CU, DU, RU and the Splits</h2>
+
+  <h3>Intuition</h3>
+  <p>A 4G eNodeB was one box doing everything. 5G asked: <em>which functions must be near the antenna, and which merely want to be?</em> The answer produced a three-way cut of the gNB. Functions with microsecond deadlines (RF, FFT, beamforming) → <strong>RU</strong> at the antenna. Functions with slot-level deadlines (scheduling, HARQ, LDPC) → <strong>DU</strong> nearby. Functions that tolerate milliseconds (ciphering, RRC, mobility anchoring) → <strong>CU</strong>, centralizable in a cloud.</p>
+
+  <pre class="ascii">        │← RRC/PDCP/SDAP →│←  RLC · MAC · high-PHY  →│← low-PHY · RF →│
+        ┌───────┐  F1  ┌──────────────┐  Open Fronthaul  ┌─────┐
+  5GC ──┤  CU   ├──────┤      DU      ├──────(eCPRI)─────┤ RU  ├─)))
+   NG   │ CP│UP │      │  real-time   │   split 7.2x     └─────┘
+        └──┬────┘      └──────────────┘
+           E1 (between CU-CP and CU-UP)      Xn: gNB ↔ gNB
+  Split Option 2 ↑                    Split Option 7.2x ↑</pre>
+
+  <h3>The interfaces, and why each exists</h3>
+  <table>
+    <tr><th>Interface</th><th>Between</th><th>Carries</th><th>Why it exists</th></tr>
+    <tr><td class="k">NG</td><td>gNB ↔ 5GC</td><td>N2 control (AMF), N3 user (UPF)</td><td>RAN–core separation</td></tr>
+    <tr><td class="k">Xn</td><td>gNB ↔ gNB</td><td>Handover prep, dual connectivity, data forwarding</td><td>Fast mobility without core involvement</td></tr>
+    <tr><td class="k">F1</td><td>CU ↔ DU</td><td>F1-C (RRC transport), F1-U (PDCP PDUs)</td><td>The Option-2 split; lets one CU pool many DUs</td></tr>
+    <tr><td class="k">E1</td><td>CU-CP ↔ CU-UP</td><td>Bearer context management</td><td>Scale user plane and control plane independently; place CU-UP at the edge for latency while CU-CP stays central</td></tr>
+    <tr><td class="k">Open Fronthaul</td><td>DU ↔ RU</td><td>Frequency-domain IQ (U-plane), scheduling metadata (C-plane), sync (S-plane), mgmt (M-plane)</td><td>The O-RAN 7.2x split; multivendor DU↔RU</td></tr>
+  </table>
+
+  <h3>Functional splits: the bandwidth–latency–intelligence triangle</h3>
+  <p>3GPP enumerated splits 1–8. Two dominate in practice:</p>
+  <ul class="tight">
+    <li><strong>Option 2 (PDCP/RLC):</strong> CU↔DU. Low midhaul bandwidth (≈ user throughput), relaxed latency (~ms). Enables CU centralization.</li>
+    <li><strong>Option 7.2x (intra-PHY):</strong> DU↔RU. The compromise that made Open RAN viable: the RU does FFT/iFFT, CP handling, and (for massive MIMO) beamforming — so fronthaul carries <em>per-layer</em> frequency-domain samples instead of <em>per-antenna</em> time-domain samples. That collapses a 64T64R fronthaul from &gt;200 Gbps (split 8/CPRI) to ~10–25 Gbps, at the price of putting some intelligence (and vendor differentiation) into the RU.</li>
+  </ul>
+  <div class="formula">Fronthaul BW (split 8, time domain)  ≈ 2 · N_ant · f_s · bits · (compr.)
+  64 antennas · 122.88 Msps · 2·16 bit ≈ 250 Gbps      → impossible economics
+Fronthaul BW (split 7.2x, freq domain) ≈ 2 · N_layers · N_SC · sym/s · bits
+  16 layers · 3276 SC · 28k sym/s · 2·9 bit ≈ 26 Gbps  → fits 25GE</div>
+
+  <h3>RAN deployment models — and the classic confusion</h3>
+  <table>
+    <tr><th>Term</th><th>Axis it describes</th><th>Meaning</th></tr>
+    <tr><td class="k">Distributed RAN (D-RAN)</td><td>Location</td><td>Full baseband at every site (classic)</td></tr>
+    <tr><td class="k">Centralized RAN (C-RAN)</td><td>Location</td><td>Baseband (DU and/or CU) pooled in a hub serving many sites</td></tr>
+    <tr><td class="k">Virtualized RAN (vRAN)</td><td>Implementation</td><td>RAN software decoupled from proprietary hardware, on COTS servers (often with accelerators)</td></tr>
+    <tr><td class="k">Cloud RAN</td><td>Implementation</td><td>vRAN done cloud-natively: containers, Kubernetes, CI/CD, horizontal scaling</td></tr>
+    <tr><td class="k">Open RAN</td><td>Interfaces</td><td>Open, multivendor interfaces (Open FH, E2, A1, O1) per O-RAN Alliance — independent of the other two axes</td></tr>
+  </table>
+  <div class="note low"><b class="tag">Clarification that matters in real RFPs</b>
+  <strong>Cloud RAN ≠ Centralized RAN.</strong> "Cloud" is about <em>how software is built and run</em> (cloud-native, containers, COTS); "centralized" is about <em>where functions physically sit</em>. A network can run containerized DUs at every cell site — cloud-based yet fully distributed. Another can pool classic proprietary basebands in a hub — centralized yet not cloud. The two axes multiply into four valid architectures, and vendors routinely blur them in marketing.</div>
+
+  <h3>Trade-off analysis</h3>
+  <table>
+    <tr><th>Choice</th><th>You gain</th><th>You pay</th></tr>
+    <tr><td class="k">Centralize DUs</td><td>Pooling (~20–30% fewer servers via tidal traffic), easier CoMP/coordination</td><td>Dark-fiber fronthaul (<100 µs), blast radius on hub failure</td></tr>
+    <tr><td class="k">Virtualize / cloud</td><td>Hardware pooling, fast upgrades, vendor software choice</td><td>Real-time engineering burden (CPU pinning, DPDK, PTP timing), accelerator dependencies (eASIC/FPGA/inline L1)</td></tr>
+    <tr><td class="k">Open interfaces</td><td>Vendor diversity, RIC programmability</td><td>You become the system integrator; performance tuning across vendor seams</td></tr>
+  </table>
+</section>
+<!-- ============ 23 SYNCHRONIZATION & TIMING ============ -->
+<section id="s23">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>05 · Synchronization &amp; timing</div>
+  <h2>The Invisible Clock That Holds TDD Together</h2>
+
+  <h3>Intuition</h3>
+  <p>Every base station needs to agree on <em>what frequency to run at</em> and — for TDD — <em>exactly when</em> its slots start. Frequency sync keeps carriers from drifting; phase/time sync keeps the whole network's uplink and downlink boundaries aligned to a common instant. In FDD this is merely important. In TDD it is existential: neighbours share one band and take turns, so if their clocks disagree, one cell's downlink blast lands right in another cell's uplink receive window. That is <strong>cross-link interference (CLI)</strong>, and it can wreck a whole cluster.</p>
+
+  <h3>Three kinds of synchronization</h3>
+  <table>
+    <tr><th>Type</th><th>What it aligns</th><th>Who needs it</th><th>Typical source</th></tr>
+    <tr><td class="k">Frequency</td><td>Carrier frequency / clock rate (ppb-level)</td><td>All cellular (avoid carrier drift, inter-carrier interference)</td><td>SyncE, PTP, GNSS</td></tr>
+    <tr><td class="k">Phase</td><td>Slot/symbol boundary alignment (µs-level)</td><td>TDD, mMIMO, CoMP, positioning</td><td>PTP (G.8275.1), GNSS</td></tr>
+    <tr><td class="k">Time</td><td>Absolute time-of-day (ToD) reference</td><td>TDD networks, features needing common epoch</td><td>GNSS, PTP grandmaster</td></tr>
+  </table>
+
+  <h3>The delivery mechanisms</h3>
+  <ul class="tight">
+    <li><strong>GNSS</strong> (GPS/Galileo/…): a per-site receiver gives absolute time and phase directly. Cheap and accurate, but vulnerable — indoor/urban-canyon sites can't see satellites, and jamming/spoofing is a growing operational risk.</li>
+    <li><strong>PTP (IEEE 1588, ITU-T G.8275.1):</strong> Precision Time Protocol distributes phase/time over the packet transport using boundary/transparent clocks at every hop. This is how sync reaches sites that can't rely on GNSS — but <em>every</em> switch in the path must support PTP, or timing error accumulates.</li>
+    <li><strong>SyncE (ITU-T G.8262):</strong> Synchronous Ethernet carries a physical-layer frequency reference in the Ethernet clock. It delivers frequency, <em>not</em> phase — usually paired with PTP (SyncE for frequency stability, PTP for phase).</li>
+    <li><strong>Holdover:</strong> when the reference is lost, the site coasts on a local oscillator (often an OCXO). Good holdover buys minutes-to-hours before phase drifts out of the TDD budget; a cheap oscillator drifts out fast — and then CLI begins.</li>
+  </ul>
+
+  <div class="note mid"><b class="tag">Why sync failure is catastrophic in TDD</b>In a TDD network, neighbouring cells must align their uplink and downlink timing. If one cell is transmitting downlink while a neighbouring cell is trying to receive uplink, the strong downlink transmission can overwhelm the neighbour's sensitive uplink receiver. That is cross-link interference: a <em>timing</em> fault that masquerades as a <em>coverage</em> or <em>interference</em> fault. A single site with failed GNSS and weak holdover can desensitize every cell around it — which is why sync alarms are treated as high-severity.</div>
+
+  <h3>Why this matters more now</h3>
+  <p>Fronthaul makes the timing problem stricter. Under low-layer splits (7.2x), the RU depends on the DU/network for a tight timing reference delivered over the <strong>fronthaul</strong> — and in <strong>Open RAN</strong> that timing now crosses vendor boundaries, so RU, DU, transport and grandmaster must interoperate on PTP profiles and holdover behaviour. mMIMO reciprocity, CoMP and positioning all tighten the phase budget further. Emerging <strong>SBFD</strong> (sub-band full duplex) and dynamic-TDD schemes raise the stakes again, because they deliberately blur the UL/DL time boundary and lean even harder on precise, network-wide synchronization to keep CLI manageable.</p>
+</section>
+<!-- ============ 05 NR AIR INTERFACE ============ -->
+<section id="s5">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>06 · NR air interface</div>
+  <h2>5G NR: One Radio, Many Personalities</h2>
+
+  <h3>Intuition</h3>
+  <p>LTE was one fixed radio design. NR is a <em>family</em> of radio designs parameterized by <strong>numerology</strong> µ: subcarrier spacing SCS = 15 · 2<sup>µ</sup> kHz. Wider subcarriers → shorter symbols → shorter slots → lower latency and better phase-noise/Doppler tolerance (good for mmWave and speed), but a shorter cyclic prefix → less tolerance to delay spread (bad for big macro cells). The waveform bends to the band and the service.</p>
+
+  <table>
+    <tr><th>µ</th><th>SCS</th><th>Slot</th><th>Slots/frame</th><th>Where used</th></tr>
+    <tr><td>0</td><td>15 kHz</td><td>1 ms</td><td>10</td><td>Low-band FDD, LTE coexistence, large cells</td></tr>
+    <tr><td>1</td><td>30 kHz</td><td>0.5 ms</td><td>20</td><td>Mid-band TDD — the global default (n78 etc.)</td></tr>
+    <tr><td>2</td><td>60 kHz</td><td>0.25 ms</td><td>40</td><td>FR1 low-latency / FR2 data</td></tr>
+    <tr><td>3</td><td>120 kHz</td><td>0.125 ms</td><td>80</td><td>FR2 mmWave</td></tr>
+    <tr><td>5–6</td><td>480–960 kHz</td><td>—</td><td>—</td><td>Rel-17 FR2-2 (52–71 GHz)</td></tr>
+  </table>
+
+  <h3>Frame structure and resources</h3>
+  <ul class="tight">
+    <li><strong>Frame</strong> 10 ms → 10 <strong>subframes</strong> → 2<sup>µ</sup> <strong>slots</strong> each → 14 OFDM <strong>symbols</strong> per slot.</li>
+    <li><strong>Resource element (RE):</strong> 1 subcarrier × 1 symbol — the atom. <strong>Resource block (RB):</strong> 12 subcarriers. At 30 kHz SCS, 100 MHz ⇒ 273 RBs ⇒ 3,276 subcarriers.</li>
+    <li><strong>Mini-slots</strong> (2/4/7 symbols): let URLLC traffic start mid-slot instead of waiting — the key to sub-ms latency.</li>
+    <li><strong>BWP (bandwidth parts):</strong> a UE can operate in a narrow slice of the carrier — saving IoT/RedCap device power.</li>
+  </ul>
+
+  <h3>Channels and signals — who says what</h3>
+  <table>
+    <tr><th>DL</th><th>Role</th><th>UL</th><th>Role</th></tr>
+    <tr><td class="k">SSB (PSS/SSS+PBCH)</td><td>“I exist, sync to me” — beam-swept beacon</td><td class="k">PRACH</td><td>“I want in” — random access preamble</td></tr>
+    <tr><td class="k">PDCCH</td><td>Scheduling grants (DCI)</td><td class="k">PUCCH</td><td>HARQ ACK/NACK, CSI, scheduling requests</td></tr>
+    <tr><td class="k">PDSCH</td><td>User data</td><td class="k">PUSCH</td><td>User data</td></tr>
+    <tr><td class="k">CSI-RS</td><td>Channel measurement for CQI/PMI/RI &amp; beams</td><td class="k">SRS</td><td>UL sounding — powers TDD reciprocity-based mMIMO</td></tr>
+    <tr><td class="k">DMRS / PTRS</td><td colspan="3">Demodulation reference / phase tracking (mmWave phase noise) — both directions</td></tr>
+  </table>
+
+  <h3>Initial access, in one breath</h3>
+  <p>UE scans the synchronization raster → detects an <strong>SSB</strong> (in FR2, waits for the best of up to 64 swept beams) → decodes MIB/SIB1 → sends <strong>PRACH</strong> preamble on the resources tied to its chosen beam → 4-step (or 2-step) RACH exchange → RRC connection. From the very first message, NR is <em>beam-centric</em>: the network knows your best beam before it knows your identity.</p>
+
+  <h3>HARQ: the reliability engine</h3>
+  <p>Every transport block gets a fast ACK/NACK. On NACK the gNB retransmits <em>different redundancy versions</em> of the same LDPC codeword, and the UE soft-combines them (incremental redundancy). Operating point: first transmission targets ~10% BLER deliberately — pushing aggressive MCS and letting HARQ mop up is more spectrally efficient than being conservative. Latency cost per retransmission: a few slots; URLLC avoids it via lower target BLER and repetitions instead.</p>
+
+  <div class="note mid"><b class="tag">TDD vs FDD in one paragraph</b>
+  FDD: separate paired bands for UL/DL — simultaneous both ways, simple, great for coverage low-band, but the paired spectrum is scarce. TDD: one band, time-shared — all wide mid/high bands are TDD. TDD gives <em>channel reciprocity</em> (UL sounding reveals the DL channel — the enabler of massive MIMO precoding) and flexible UL:DL ratios, but costs guard periods, needs network-wide slot synchronization to avoid cross-link interference, and typically gives DL ~75% of airtime — creating the structural UL bottleneck that Section 16 (uplink) and 5G-A's SBFD try to fix.</div>
+</section>
+
+<!-- ============ 06 SPECTRUM & PROPAGATION ============ -->
+<section id="s6">
+  <div class="eyebrow"><span class="band" style="background:linear-gradient(90deg,var(--low),var(--mid),var(--high))"></span>07 · Spectrum &amp; propagation</div>
+  <h2>Spectrum: the Real Estate of Wireless</h2>
+
+  <h3>Intuition</h3>
+  <p>Frequency buys you bandwidth; wavelength buys you reach. As carrier frequency rises, (i) free-space loss referenced to isotropic antennas grows as f², because a fixed-gain antenna's effective aperture shrinks as λ²; (ii) diffraction around obstacles weakens; (iii) penetration through walls and foliage collapses; (iv) at sub-THz, molecular absorption (O₂ at 60 GHz, H₂O at 183 GHz) adds dB/km. The compensation is that short wavelengths let you pack huge arrays into small panels — beamforming gain claws back link budget, but only along a narrow, blockable line.</p>
+
+  <div class="formula">FSPL(dB) = 32.45 + 20·log₁₀(f_MHz) + 20·log₁₀(d_km)
+3.5 GHz vs 700 MHz at same distance:  +14 dB
+28 GHz  vs 700 MHz:                   +32 dB   (before walls, rain, foliage)
+Typical exterior wall: 700 MHz ~10 dB · 3.5 GHz ~20 dB · 28 GHz ~40+ dB (often blocked)</div>
+
+  <div class="note mid"><b class="tag">Say "power" precisely</b>"Power" is not one number — a link budget needs the right one in the right place:
+  <ul class="tight" style="margin:8px 0 0">
+    <li><strong>UE max Tx power</strong> — the device PA ceiling, typically ~23 dBm (200 mW) for a handset (power class 3). Fixed and small.</li>
+    <li><strong>gNB conducted RF power</strong> — power at the PA/antenna port, before antenna gain.</li>
+    <li><strong>PA output</strong> — raw amplifier output, from which conducted power is derived after filter/feeder loss.</li>
+    <li><strong>Antenna gain</strong> — directional focusing (dBi); for a massive-MIMO panel this includes beamforming array gain.</li>
+    <li><strong>EIRP</strong> = conducted power + antenna gain − losses. This is what actually reaches the UE, and it is regulator-capped.</li>
+    <li><strong>Total site power</strong> — DC/AC watts the site draws (radios + baseband + cooling): an <em>energy</em> quantity, not a link-budget term.</li>
+  </ul>
+  Because the gNB's EIRP dwarfs the UE's ~23 dBm, the two directions are asymmetric: downlink can shout, the uplink can only whisper. This is why <strong>uplink is frequently the coverage-limiting direction even when downlink RSRP looks fine</strong> (see §16).</div>
+
+  <h3>The three-band portfolio</h3>
+  <table>
+    <tr><th>Band</th><th>Examples</th><th>Character</th><th>Role</th></tr>
+    <tr><td class="k" style="color:var(--low)">Low (&lt;1 GHz)</td><td>n28 700, n5 850, n8 900</td><td>FDD, 2×10–20 MHz, superb propagation &amp; indoor reach</td><td>Coverage layer, rural, deep indoor, IoT — thin capacity</td></tr>
+    <tr><td class="k" style="color:var(--mid)">Mid (1–7 GHz)</td><td>n78 3.5 GHz (80–100 MHz TDD), n77, n41 2.6</td><td>The balance point; mMIMO viable</td><td>The 5G workhorse: capacity with real coverage</td></tr>
+    <tr><td class="k" style="color:var(--high)">mmWave (24–52 GHz)</td><td>n257/n258/n260/n261</td><td>400–800 MHz carriers, LOS-ish, blockage-prone</td><td>Hotspots, FWA, venues, industrial — capacity islands</td></tr>
+  </table>
+
+  <h3>Channel effects you must model</h3>
+  <ul class="tight">
+    <li><strong>Shadowing (slow fading):</strong> log-normal, σ ≈ 6–8 dB — buildings and terrain. Sets the coverage <em>margin</em>.</li>
+    <li><strong>Fast fading:</strong> multipath interference, changes over ~λ/2 of movement — what link adaptation chases.</li>
+    <li><strong>Delay spread:</strong> path-length differences (~0.1–5 µs) → sets CP length → constrains numerology per environment.</li>
+    <li><strong>Doppler spread:</strong> f_D = v·f/c. At 3.5 GHz, 120 km/h ⇒ ~390 Hz ⇒ channel decorrelates in ~1 ms — CSI aging becomes the enemy of precoding.</li>
+  </ul>
+
+  <h3>Spectrum machinery</h3>
+  <ul class="tight">
+    <li><strong>Carrier aggregation:</strong> bond carriers across bands (e.g., 700 MHz anchor + 3.5 GHz capacity): coverage of the low band, throughput of the sum.</li>
+    <li><strong>Dynamic Spectrum Sharing (DSS):</strong> LTE and NR share one FDD carrier, scheduler-multiplexed per ms. Migration tool, ~10–20% capacity overhead — a bridge, not a destination.</li>
+    <li><strong>Refarming:</strong> retire 2G/3G, re-license the band to NR — where most "new" 5G FDD spectrum actually comes from.</li>
+  </ul>
+
+  <div class="widget">
+    <header><span class="wtag">Widget 02</span><h4>Coverage &amp; Capacity Simulator</h4><span class="sub">path-loss driven heatmap</span></header>
+    <div class="wbody">
+      <div class="wctl">
+        <div class="ctl"><label>Band <output id="ccBandO">3.5 GHz</output></label>
+          <div class="seg" id="ccBand"><button data-v="0.7">0.7G</button><button class="on" data-v="3.5">3.5G</button><button data-v="28">28G</button></div></div>
+        <div class="ctl"><label>Sites <output id="ccSitesO">7</output></label><input type="range" id="ccSites" min="1" max="19" value="7"></div>
+        <div class="ctl"><label>Bandwidth <output id="ccBwO">100 MHz</output></label><input type="range" id="ccBw" min="10" max="400" step="10" value="100"></div>
+        <div class="ctl"><label>Tx power/ant. gain <output id="ccPwrO">medium</output></label><input type="range" id="ccPwr" min="0" max="2" step="1" value="1"></div>
+        <div class="ctl"><label>Users in area <output id="ccUsersO">600</output></label><input type="range" id="ccUsers" min="100" max="3000" step="100" value="600"></div>
+        <div class="ctl"><label>Demand per user <output id="ccDemO">20 Mbps</output></label><input type="range" id="ccDem" min="2" max="100" step="2" value="20"></div>
+      </div>
+      <div class="wout">
+        <canvas id="ccCanvas" width="640" height="380"></canvas>
+        <div class="legend"><span><i style="background:#0E7C6B"></i>strong SINR</span><span><i style="background:#E7C46B"></i>usable</span><span><i style="background:#C25327"></i>weak/edge</span><span><i style="background:#3a3f45"></i>coverage hole</span><span><i style="background:#5A4FBF"></i>congested cell ring</span></div>
+        <div class="stats">
+          <div class="stat"><div class="v" id="ccCov">–</div><div class="l">area covered</div></div>
+          <div class="stat"><div class="v" id="ccCap">–</div><div class="l">cell capacity (avg)</div></div>
+          <div class="stat"><div class="v" id="ccLoad">–</div><div class="l">load / capacity</div></div>
+          <div class="stat"><div class="v" id="ccVerdict">–</div><div class="l">limiting factor</div></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--ink2);margin-top:10px">Try: hold 7 sites, switch 3.5 G → 28 G and watch coverage collapse while per-cell capacity soars. Then fix 28 GHz coverage by adding sites — count how many you need. That ratio <em>is</em> mmWave economics.</p>
+        <div class="mscope"><b>Model scope</b>This is a simplified best-server SINR and load model. It does <em>not</em> replace calibrated RF planning, ray tracing, clutter/terrain data, real antenna patterns, measured traffic maps, drive-test data, or vendor-specific planning tools. Use it for intuition about band/site/bandwidth trade-offs, not for dimensioning.</div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ============ 07 ANTENNAS / MASSIVE MIMO ============ -->
+<section id="s7">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>08 · Antennas &amp; massive MIMO</div>
+  <h2>Steering Energy Through Space</h2>
+
+  <h3>Intuition</h3>
+  <p>An antenna array is an interference machine. Feed the same signal to N elements with per-element phase shifts, and the wavefronts add constructively in one chosen direction and cancel elsewhere. Double the elements → +3 dB gain and roughly half the beamwidth. With independent radio chains per element (<strong>digital beamforming</strong>), the array can form many simultaneous beams — and that unlocks <strong>spatial multiplexing</strong>: serving several users on the <em>same</em> time-frequency resources (MU-MIMO), multiplying cell capacity without new spectrum.</p>
+
+  <div class="formula">Uniform linear array, N elements, spacing d, steering angle θ₀:
+AF(θ) = | Σₙ exp( j·2π·(d/λ)·n·(sinθ − sinθ₀) ) | / N
+Gain ≈ 10·log₁₀(N) dBi (+ element gain) · HPBW ≈ 102°/N (d=λ/2)</div>
+
+  <h3>Engineering reality</h3>
+  <ul class="tight">
+    <li><strong>Passive vs active:</strong> passive panels + remote radio (LTE style) vs Active Antenna Units — 32T32R/64T64R transceivers integrated behind the radome. AAUs enable per-element digital control but weigh 20–40 kg and dominate site power.</li>
+    <li><strong>mMIMO modes:</strong> <em>Beamforming gain</em> (coverage — one strong beam), <em>SU-MIMO</em> (up to 4–8 layers to one phone), <em>MU-MIMO</em> (8–16 layers across users — the capacity multiplier, needs users spatially separated and accurate CSI).</li>
+    <li><strong>Getting CSI:</strong> TDD reciprocity via SRS (best — full channel knowledge) vs FDD codebook feedback (PMI — quantized, coarser). This is why mMIMO shines on TDD mid-band.</li>
+    <li><strong>FR2 beam management:</strong> analog/hybrid arrays sweep SSB beams (P-1), refine with CSI-RS (P-2), track UE movement (P-3). Beam failure → recovery procedure. Every FR2 link is a fragile pencil of energy.</li>
+    <li><strong>Classical geometry still matters:</strong> mechanical/electrical tilt trades coverage vs overshoot interference; azimuth and sectorization (3→6 sectors) and cell splitting remain the cheapest capacity tools before new spectrum.</li>
+  </ul>
+
+  <div class="widget">
+    <header><span class="wtag">Widget 03</span><h4>Beamforming Simulator</h4><span class="sub">array factor, live</span></header>
+    <div class="wbody">
+      <div class="wctl">
+        <div class="ctl"><label>Elements N <output id="bfNO">16</output></label><input type="range" id="bfN" min="2" max="128" step="1" value="16"></div>
+        <div class="ctl"><label>Steered beam <output id="bfSteerO">20°</output></label><input type="range" id="bfSteer" min="-70" max="70" value="20"></div>
+        <div class="ctl"><label>User position <output id="bfUserO">20°</output></label><input type="range" id="bfUser" min="-70" max="70" value="20"></div>
+        <div class="ctl"><label>Interferer at <output id="bfIntO">-40°</output></label><input type="range" id="bfInt" min="-70" max="70" value="-40"></div>
+        <div class="ctl"><label>Interference level <output id="bfIntLvlO">med</output></label><input type="range" id="bfIntLvl" min="0" max="2" step="1" value="1"></div>
+        <div class="ctl"><label>Band <output id="bfBandO">3.5 GHz</output></label>
+          <div class="seg" id="bfBand"><button data-v="0.7">0.7G</button><button class="on" data-v="3.5">3.5G</button><button data-v="28">28G</button></div></div>
+        <div class="ctl"><label>Downtilt <output id="bfTiltO">6°</output></label><input type="range" id="bfTilt" min="0" max="14" value="6"></div>
+      </div>
+      <div class="wout">
+        <canvas id="bfCanvas" width="640" height="360"></canvas>
+        <div class="stats">
+          <div class="stat"><div class="v" id="bfGain">–</div><div class="l">gain to user</div></div>
+          <div class="stat"><div class="v" id="bfHpbw">–</div><div class="l">beamwidth</div></div>
+          <div class="stat"><div class="v" id="bfSinr">–</div><div class="l">est. SINR</div></div>
+          <div class="stat"><div class="v" id="bfTput">–</div><div class="l">est. throughput</div></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--ink2);margin-top:10px">Try: misalign the beam from the user by 5° at N=8, then at N=64 — big arrays are less forgiving. Then steer a null: put the interferer inside a sidelobe notch and watch SINR jump. That is the whole argument for accurate CSI.</p>
+        <div class="mscope"><b>Model scope</b>This is an idealized array-factor model (uniform linear array, ideal elements). Real arrays add element patterns, calibration error, mutual coupling, hybrid-beamforming constraints, side-lobe/EVM limits, vertical-pattern effects and regulatory EIRP caps — so real beams are broader, lumpier and more constrained than the clean pattern shown here.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 08 BASEBAND ============ -->
+<section id="s8">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>09 · Baseband processing</div>
+  <h2>Baseband: Where Bits Become Waveforms</h2>
+
+  <h3>Intuition</h3>
+  <p>Baseband is the assembly line between IP packets and RF samples. Downlink is a <em>protection and shaping</em> pipeline: take a scheduled block of bits, armor it against errors (coding), pack it densely (modulation), spread it across antennas (MIMO), and paint it onto the time-frequency grid (OFDM). Uplink is the mirror run in reverse — but much harder, because the receiver must first <em>discover</em> what the channel did to the signal before it can undo it.</p>
+
+  <div class="diagram"><svg viewBox="0 0 940 210" font-family="IBM Plex Mono,monospace" font-size="10">
+    <defs><marker id="arr2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="#3D4E5C"/></marker></defs>
+    <text x="10" y="18" font-weight="600" font-size="11" fill="#101B26">DOWNLINK TX CHAIN</text>
+    <g>
+      <g stroke="#3D4E5C" stroke-width="1.2" marker-end="url(#arr2)">
+        <line x1="100" y1="52" x2="112" y2="52"/><line x1="204" y1="52" x2="216" y2="52"/><line x1="308" y1="52" x2="320" y2="52"/><line x1="412" y1="52" x2="424" y2="52"/><line x1="516" y1="52" x2="528" y2="52"/><line x1="620" y1="52" x2="632" y2="52"/><line x1="724" y1="52" x2="736" y2="52"/><line x1="828" y1="52" x2="840" y2="52"/>
+      </g>
+      <g fill="#DCEEE9" stroke="#0E7C6B" stroke-width="1.1">
+        <rect x="10" y="34" width="90" height="36" rx="6"/><rect x="112" y="34" width="92" height="36" rx="6"/><rect x="216" y="34" width="92" height="36" rx="6"/><rect x="320" y="34" width="92" height="36" rx="6"/><rect x="424" y="34" width="92" height="36" rx="6"/><rect x="528" y="34" width="92" height="36" rx="6"/><rect x="632" y="34" width="92" height="36" rx="6"/>
+      </g>
+      <g fill="#F7E4DA" stroke="#C25327" stroke-width="1.1"><rect x="736" y="34" width="92" height="36" rx="6"/><rect x="840" y="34" width="90" height="36" rx="6"/></g>
+      <g fill="#101B26" text-anchor="middle">
+        <text x="55" y="49">Scheduler</text><text x="55" y="61">QoS · MCS</text>
+        <text x="158" y="49">LDPC encode</text><text x="158" y="61">+ CRC, rate match</text>
+        <text x="262" y="49">Scramble +</text><text x="262" y="61">modulate (QAM)</text>
+        <text x="366" y="49">Layer map</text><text x="366" y="61">1–8 layers</text>
+        <text x="470" y="49">Precode</text><text x="470" y="61">W (PMI/SRS)</text>
+        <text x="574" y="49">RE mapping</text><text x="574" y="61">+ DMRS/CSI-RS</text>
+        <text x="678" y="49">iFFT + CP</text><text x="678" y="61">OFDM gen</text>
+        <text x="782" y="49">Digital FE</text><text x="782" y="61">CFR · DPD</text>
+        <text x="885" y="49">DAC · PA</text><text x="885" y="61">antenna</text>
+      </g>
+    </g>
+    <text x="10" y="112" font-weight="600" font-size="11" fill="#101B26">UPLINK RX CHAIN</text>
+    <g>
+      <g stroke="#3D4E5C" stroke-width="1.2" marker-end="url(#arr2)">
+        <line x1="100" y1="146" x2="112" y2="146"/><line x1="204" y1="146" x2="216" y2="146"/><line x1="308" y1="146" x2="320" y2="146"/><line x1="412" y1="146" x2="424" y2="146"/><line x1="516" y1="146" x2="528" y2="146"/><line x1="620" y1="146" x2="632" y2="146"/><line x1="724" y1="146" x2="736" y2="146"/><line x1="828" y1="146" x2="840" y2="146"/>
+      </g>
+      <g fill="#F7E4DA" stroke="#C25327" stroke-width="1.1"><rect x="10" y="128" width="90" height="36" rx="6"/><rect x="112" y="128" width="92" height="36" rx="6"/></g>
+      <g fill="#DCEEE9" stroke="#0E7C6B" stroke-width="1.1">
+        <rect x="216" y="128" width="92" height="36" rx="6"/><rect x="320" y="128" width="92" height="36" rx="6"/><rect x="424" y="128" width="92" height="36" rx="6"/><rect x="528" y="128" width="92" height="36" rx="6"/><rect x="632" y="128" width="92" height="36" rx="6"/><rect x="736" y="128" width="92" height="36" rx="6"/><rect x="840" y="128" width="90" height="36" rx="6"/>
+      </g>
+      <g fill="#101B26" text-anchor="middle">
+        <text x="55" y="143">LNA · ADC</text><text x="55" y="155">sync (time/freq)</text>
+        <text x="158" y="143">CP strip + FFT</text><text x="158" y="155">to freq domain</text>
+        <text x="262" y="143">Channel est.</text><text x="262" y="155">from DMRS</text>
+        <text x="366" y="143">Equalize +</text><text x="366" y="155">MIMO detect</text>
+        <text x="470" y="143">IC (optional)</text><text x="470" y="155">SIC / MU sep.</text>
+        <text x="574" y="143">Demod → LLRs</text><text x="574" y="155">soft bits</text>
+        <text x="678" y="143">HARQ combine</text><text x="678" y="155">IR buffer</text>
+        <text x="782" y="143">LDPC decode</text><text x="782" y="155">iterative BP</text>
+        <text x="885" y="143">CRC check</text><text x="885" y="155">→ MAC/RLC</text>
+      </g>
+    </g>
+    <text x="470" y="196" text-anchor="middle" fill="#8a97a1" font-size="9.5">amber = RU (7.2x split) · teal = DU high-PHY/MAC — the split line runs between iFFT/FFT and the rest</text>
+  </svg><figcaption>The baseband pipeline. In split 7.2x the RU owns the (i)FFT boundary and analog front-end; the DU owns everything channel-aware.</figcaption></div>
+
+  <h3>Downlink stages worth internalizing</h3>
+  <ul class="tight">
+    <li><strong>Channel coding — LDPC for data:</strong> chosen over Turbo for parallel-hardware decoding at 10+ Gbps and a fine-grained rate-matching design (two base graphs; puncture/shorten to any rate). <strong>Polar for control:</strong> optimal at the short block lengths of DCI/UCI where LDPC is weak.</li>
+    <li><strong>Rate matching:</strong> the circular buffer that turns one mother code into any code rate and generates HARQ redundancy versions RV0–3.</li>
+    <li><strong>Precoding:</strong> multiply layers by matrix W to pre-compensate the channel — the mathematical heart of mMIMO. Regularized zero-forcing/MMSE weights suppress inter-user interference in MU-MIMO.</li>
+    <li><strong>Digital front-end (DFE):</strong> the unsung 20% — crest-factor reduction (OFDM's ~10 dB PAPR would murder PA efficiency) and digital predistortion (linearize the PA so you can drive it hot). DFE quality largely decides site energy consumption.</li>
+  </ul>
+
+  <h3>Uplink is the hard direction</h3>
+  <p>The gNB must estimate the channel from sparse DMRS while the signal is 20–30 dB weaker than DL (phone PA ≈ 0.2 W vs gNB 100+ W), separate co-scheduled MU-MIMO users whose signals arrive superimposed (MMSE or successive interference cancellation), and finish LDPC decoding within the HARQ deadline. Uplink DSP dominates DU compute budgets.</p>
+
+  <h3>Where the compute lives</h3>
+  <table>
+    <tr><th>Platform</th><th>Runs</th><th>Why</th></tr>
+    <tr><td class="k">RU ASIC/RFSoC</td><td>DFE, (i)FFT, FH compression, analog BF</td><td>Fixed-function, watt-critical, at the mast</td></tr>
+    <tr><td class="k">DU: CPU (x86/ARM)</td><td>MAC, RLC, scheduler, control</td><td>Flexible logic, cloud-friendly</td></tr>
+    <tr><td class="k">DU: accelerator (eASIC/FPGA/inline-L1 card or GPU)</td><td>LDPC, channel est., equalization, precoding</td><td>These kernels are matrix math at fierce rates — lookaside vs inline acceleration is a live architecture war; GPUs (e.g., AI-RAN initiatives) bid to share silicon between L1 and AI workloads</td></tr>
+    <tr><td class="k">CU: CPU</td><td>PDCP crypto (often w/ instructions), RRC, SDAP</td><td>Throughput-bound, not deadline-bound</td></tr>
+  </table>
+</section>
+<!-- ============ 24 RF HARDWARE REALITY ============ -->
+<section id="s24">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>10 · RF hardware reality</div>
+  <h2>Where the Math Meets the Metal</h2>
+
+  <h3>Intuition</h3>
+  <p>Baseband algorithms assume a clean, linear radio. Real radios are none of those things. The power amplifier distorts, the oscillator jitters, the converters quantize, and the receiver adds noise. Every one of these impairments sets a ceiling that no amount of clever DSP can fully lift — which is why <strong>baseband and RF cannot be designed in isolation</strong>. The most common way that a beautiful 256-QAM plan dies in the field is an RF impairment nobody budgeted for.</p>
+
+  <h3>Transmitter-side reality</h3>
+  <ul class="tight">
+    <li><strong>PA non-linearity:</strong> the power amplifier is only linear well below saturation. Push it for efficiency and it clips, splattering energy into neighbouring channels and distorting your own constellation.</li>
+    <li><strong>PAPR (peak-to-average power ratio):</strong> OFDM waveforms have large peaks. To avoid clipping those peaks, you back the PA off — wasting efficiency. High PAPR is a core reason uplink historically used DFT-s-OFDM (lower PAPR → more usable UE Tx power).</li>
+    <li><strong>DPD (digital predistortion):</strong> pre-distort the signal with the PA's inverse so the output comes out linear. Lets you run the PA hotter (more efficient) while meeting emission limits — but DPD needs compute, calibration and feedback.</li>
+    <li><strong>CFR (crest factor reduction):</strong> deliberately clip/shape peaks to cut PAPR before the PA, trading a little in-band EVM for efficiency and ACLR headroom.</li>
+    <li><strong>ACLR (adjacent channel leakage ratio):</strong> how much power spills into neighbours' channels — regulator-limited. Poor linearity → ACLR violation → you interfere with the operator next door.</li>
+    <li><strong>EVM (error vector magnitude):</strong> how far received symbols land from their ideal constellation points. High-order modulation (256/1024-QAM) demands very low EVM; a few percent EVM quietly caps you at 64-QAM regardless of SINR.</li>
+  </ul>
+
+  <h3>Receiver-side reality</h3>
+  <ul class="tight">
+    <li><strong>Noise figure (NF):</strong> the receiver's own added noise. Every dB of NF is a dB of sensitivity lost — it directly shifts the uplink coverage edge.</li>
+    <li><strong>Phase noise:</strong> oscillator instability that smears subcarriers. It worsens sharply at high frequency, which is one reason mmWave/sub-THz high-order modulation is hard.</li>
+    <li><strong>IQ imbalance:</strong> gain/phase mismatch between the I and Q paths creates an image that raises the EVM floor.</li>
+    <li><strong>ADC/DAC resolution:</strong> finite bits quantize the signal. Wide bandwidth + many antennas make high-resolution, high-rate converters power-hungry and expensive — a real constraint behind mMIMO and (especially) sub-THz front-ends.</li>
+    <li><strong>Blocking &amp; desensitization:</strong> a strong nearby signal (even out-of-band) can saturate the front-end and desensitize the receiver, collapsing sensitivity even where the wanted signal is fine.</li>
+    <li><strong>Thermal limits:</strong> PAs and converters generate heat; sustained peak power is bounded by cooling. This ties RF performance to the site's energy and thermal design.</li>
+  </ul>
+
+  <div class="note mid"><b class="tag">Why baseband can't ignore RF</b>Higher-order modulation needs a lower EVM floor; wider bandwidth needs flatter response, faster converters and better phase noise; more antennas multiply converter count and calibration burden. So the "just use 1024-QAM over 400 MHz on 64 layers" plan runs straight into PA linearity, converter power, phase noise and thermal limits. Link adaptation (§11) is, in part, the scheduler negotiating with these hardware ceilings in real time.</div>
+</section>
+<!-- ============ 09 PHY & LINK ADAPTATION ============ -->
+<section id="s9">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>11 · PHY &amp; link adaptation</div>
+  <h2>Link Adaptation: Surfing the Channel</h2>
+
+  <h3>Intuition</h3>
+  <p>The channel to every user is a moving target. Link adaptation is the feedback loop that keeps each transmission <em>just</em> aggressive enough: as clean as the channel allows (high-order QAM, light coding) but no cleaner (or you crash into errors). The UE measures CSI-RS and reports <strong>CQI</strong> (how good is my channel), <strong>PMI</strong> (which precoder fits it), <strong>RI</strong> (how many layers it can support); the gNB fuses that with HARQ history and picks an <strong>MCS</strong>.</p>
+
+  <div class="formula">Shannon bound:  C = B · log₂(1 + SINR)          [the ceiling]
+Practice:       SE ≈ min( α · log₂(1+SINR), SE_max(256QAM)=7.4 b/s/Hz ), α≈0.75
+Outer loop:     if ACK ratio > target → nudge MCS up; on NACK → back off
+                (closed-loop correction for CQI bias & aging — targets ~10% iBLER)</div>
+
+  <table>
+    <tr><th>Modulation</th><th>bits/sym</th><th>Needs ~SINR</th><th>Feel</th></tr>
+    <tr><td class="k">QPSK</td><td>2</td><td>&gt; −5 dB</td><td>Cell-edge survival mode</td></tr>
+    <tr><td class="k">16-QAM</td><td>4</td><td>&gt; 8 dB</td><td>Mid-cell cruising</td></tr>
+    <tr><td class="k">64-QAM</td><td>6</td><td>&gt; 15 dB</td><td>Good conditions</td></tr>
+    <tr><td class="k">256-QAM</td><td>8</td><td>&gt; 22 dB</td><td>Near-cell, low mobility, clean RF</td></tr>
+  </table>
+
+  <p><strong>Mobility poisons the loop:</strong> CQI is measured, reported, scheduled, transmitted — 5–10 ms of aging. At high Doppler the channel has moved on; the network must apply a back-off margin, sacrificing efficiency for robustness. This staleness problem is exactly what Rel-18's AI-based CSI prediction attacks.</p>
+
+  <div class="widget">
+    <header><span class="wtag">Widget 04</span><h4>Link Adaptation Simulator</h4><span class="sub">SINR → MCS → throughput</span></header>
+    <div class="wbody">
+      <div class="wctl">
+        <div class="ctl"><label>SINR <output id="laSinrO">15 dB</output></label><input type="range" id="laSinr" min="-8" max="32" value="15"></div>
+        <div class="ctl"><label>Mobility <output id="laMobO">30 km/h</output></label><input type="range" id="laMob" min="0" max="300" step="10" value="30"></div>
+        <div class="ctl"><label>MIMO rank <output id="laRankO">2</output></label><input type="range" id="laRank" min="1" max="4" value="2"></div>
+        <div class="ctl"><label>Bandwidth <output id="laBwO">100 MHz</output></label><input type="range" id="laBw" min="10" max="400" step="10" value="100"></div>
+        <div class="ctl"><label>Interference <output id="laIntO">low</output></label><input type="range" id="laInt" min="0" max="10" value="2"></div>
+      </div>
+      <div class="wout">
+        <canvas id="laCanvas" width="640" height="300"></canvas>
+        <div class="stats">
+          <div class="stat"><div class="v" id="laMcs">–</div><div class="l">selected MCS</div></div>
+          <div class="stat"><div class="v" id="laSe">–</div><div class="l">spectral eff.</div></div>
+          <div class="stat"><div class="v" id="laTput">–</div><div class="l">throughput</div></div>
+          <div class="stat"><div class="v" id="laBler">–</div><div class="l">1st-tx BLER</div></div>
+          <div class="stat"><div class="v" id="laRob">–</div><div class="l">robustness</div></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--ink2);margin-top:10px">Try: fix SINR at 22 dB and sweep mobility 0 → 300 km/h — watch the selected MCS retreat even though the average channel hasn't changed. That gap between Shannon and delivered rate is the price of CSI aging.</p>
+        <div class="mscope"><b>Model scope</b>A simplified link-adaptation model. Real MCS selection depends on the standardized MCS/CQI tables, CQI-to-MCS mapping, outer-loop link adaptation (BLER-target tracking), HARQ history, scheduler policy, UE capability, channel-estimation error and vendor implementation. The mobility back-off here is a stand-in for CSI aging, not a specific vendor algorithm.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 10 MAC & SCHEDULING ============ -->
+<section id="s10">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>12 · MAC &amp; scheduling</div>
+  <h2>The Scheduler: 2,000 Auctions per Second</h2>
+
+  <h3>Intuition</h3>
+  <p>Every slot, the MAC scheduler holds an auction for the RB grid. Each user's "bid" is shaped by its channel quality, its QoS contract, how long its data has waited, and how much it has already received. The classic genius move is <strong>proportional fair (PF)</strong>: rank users by <span class="m">instantaneous rate / average rate</span>. It rides each user's fading <em>peaks</em> (multi-user diversity — cell throughput actually <em>grows</em> with more users) while the denominator guarantees starving users eventually win.</p>
+
+  <div class="formula">PF metric:   argmaxᵤ  rᵤ(t) / R̄ᵤ(t)     R̄ᵤ ← (1−1/T)·R̄ᵤ + (1/T)·served
+Round robin: fairness in time, blind to channel  → wastes capacity
+Max C/I:     argmaxᵤ rᵤ(t)                        → max cell tput, starves the edge
+QoS-aware:   metric × delay/GBR multipliers; URLLC preempts via mini-slots
+             (may puncture eMBB mid-flight — Rel-16 pre-emption indication)</div>
+
+  <h3>The plumbing around the decision</h3>
+  <ul class="tight">
+    <li><strong>Buffer Status Reports (UL)</strong> and queue depths (DL) tell the scheduler who has data.</li>
+    <li><strong>Scheduling Request → grant</strong> round trip costs latency; <strong>configured grants</strong> pre-allocate UL resources for URLLC to skip it.</li>
+    <li><strong>QoS (5QI)</strong> maps flows to priority, delay budget, and GBR/non-GBR treatment.</li>
+    <li><strong>Slicing at the MAC:</strong> a slice becomes a resource-partitioning policy — e.g., "slice A guaranteed 30% of RBs, may borrow idle capacity." The RIC can retune these ratios in near-real time.</li>
+  </ul>
+
+  <div class="widget">
+    <header><span class="wtag">Widget 05</span><h4>Scheduler Simulator</h4><span class="sub">live TTI-by-TTI allocation</span></header>
+    <div class="wbody">
+      <div class="wctl">
+        <div class="ctl"><label>Policy</label>
+          <div class="seg" id="schPol"><button data-v="pf" class="on">PF</button><button data-v="rr">RR</button><button data-v="max">MaxC/I</button></div></div>
+        <div class="ctl"><label>Users <output id="schNO">6</output></label><input type="range" id="schN" min="2" max="12" value="6"></div>
+        <div class="ctl"><label>Cell-edge users <output id="schEdgeO">2</output></label><input type="range" id="schEdge" min="0" max="6" value="2"></div>
+        <div class="ctl"><label>URLLC user</label><div class="seg" id="schUrllc"><button data-v="0" class="on">off</button><button data-v="1">on</button></div></div>
+        <div class="ctl"><label>Load <output id="schLoadO">high</output></label><input type="range" id="schLoad" min="0" max="2" step="1" value="2"></div>
+        <button class="wbtn" id="schReset">Reset averages</button>
+      </div>
+      <div class="wout">
+        <canvas id="schCanvas" width="640" height="330"></canvas>
+        <div class="stats">
+          <div class="stat"><div class="v" id="schCell">–</div><div class="l">cell throughput</div></div>
+          <div class="stat"><div class="v" id="schJain">–</div><div class="l">Jain fairness</div></div>
+          <div class="stat"><div class="v" id="schEdgeT">–</div><div class="l">worst-user tput</div></div>
+          <div class="stat"><div class="v" id="schLat">–</div><div class="l">URLLC latency</div></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--ink2);margin-top:10px">Switch PF → MaxC/I with 2 edge users: cell throughput rises, worst-user throughput collapses toward zero. That single trade-off is why no serious network runs pure MaxC/I — and why fairness exponents are a tunable, now an RIC xApp target.</p>
+        <div class="mscope"><b>Model scope</b>A simplified scheduling model showing policy trade-offs. Real schedulers also weigh QoS flows (GBR vs non-GBR), buffer-status reports, HARQ retransmissions, power headroom, UE capability, beam/spatial constraints, slice policy and vendor-proprietary algorithms — and run per-RB every slot at far finer granularity than this animation.</div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ============ 25 CONTROL PLANE: RRC & THE STACK ============ -->
+<section id="s25">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>13 · Control plane: RRC &amp; the protocol stack</div>
+  <h2>What Actually Governs a Connection</h2>
+
+  <h3>Intuition</h3>
+  <p>The PHY and MAC move bits, but something has to decide <em>whether a device is connected at all</em>, where it is, which bearers exist, and when to hand it over. That is the control plane. Understanding it is what connects the low-layer radio behaviour in the rest of this module to real network procedures like "why did my phone take 200 ms to wake up" or "why did paging fail."</p>
+
+  <h3>Who does what: the protocol stack</h3>
+  <table>
+    <tr><th>Layer</th><th>Plane</th><th>Responsibility</th></tr>
+    <tr><td class="k">NAS</td><td>Control (UE↔core)</td><td>Registration, authentication, mobility (tracking areas), session management — terminates in the AMF/SMF, transparent to the gNB</td></tr>
+    <tr><td class="k">RRC</td><td>Control (UE↔gNB)</td><td>Connection control, measurement configuration, mobility/handover, radio-bearer setup, state transitions</td></tr>
+    <tr><td class="k">SDAP</td><td>User</td><td>Maps QoS flows ↔ data radio bearers (5G-specific)</td></tr>
+    <tr><td class="k">PDCP</td><td>Both</td><td>Ciphering, integrity, reordering, duplication (for reliability/dual connectivity)</td></tr>
+    <tr><td class="k">RLC</td><td>Both</td><td>Segmentation/reassembly, ARQ retransmission (per bearer)</td></tr>
+    <tr><td class="k">MAC</td><td>Both</td><td>Scheduling, HARQ, multiplexing, random access, BSR/power headroom</td></tr>
+    <tr><td class="k">PHY</td><td>Both</td><td>Coding, modulation, MIMO, the actual air interface</td></tr>
+  </table>
+  <p style="font-size:13px;color:var(--ink2)">A useful mental split: <strong>NAS</strong> is a conversation between the device and the <em>core</em> (mobility &amp; sessions); <strong>RRC</strong> is a conversation between the device and the <em>radio</em> (how to use the air interface). Signalling rides on <strong>SRBs</strong> (signalling radio bearers); user traffic rides on <strong>DRBs</strong> (data radio bearers).</p>
+
+  <h3>RRC states — and why they exist</h3>
+  <table>
+    <tr><th>State</th><th>What it means</th><th>Trade-off</th></tr>
+    <tr><td class="k">RRC_IDLE</td><td>No RRC connection; UE sleeps, monitors paging, does cell reselection itself</td><td>Lowest battery; highest setup latency to resume</td></tr>
+    <tr><td class="k">RRC_INACTIVE</td><td>Context retained in RAN; fast resume without full setup (5G addition)</td><td>Balances battery vs latency — great for bursty IoT/app traffic</td></tr>
+    <tr><td class="k">RRC_CONNECTED</td><td>Active bearers, full scheduling, measurement reporting, mobility controlled by network</td><td>Lowest latency; highest power &amp; signalling</td></tr>
+  </table>
+
+  <h3>The core procedures</h3>
+  <ul class="tight">
+    <li><strong>Registration:</strong> the UE announces itself to the core (via NAS), authenticates, and is assigned a registration area.</li>
+    <li><strong>Tracking areas &amp; paging:</strong> the network knows the UE only to <em>tracking-area</em> granularity when idle. To reach it, it <strong>pages</strong> across the area. Too-large areas → heavy paging load; too-small → frequent updates. This is a classic mobility/signalling trade-off.</li>
+    <li><strong>PDU session establishment:</strong> sets up the end-to-end user-plane path (UE ↔ UPF ↔ data network), anchoring the IP connectivity.</li>
+    <li><strong>QoS flows → DRBs:</strong> the core marks packets into QoS flows (5QI); SDAP maps them onto DRBs with matching scheduling treatment. This is where a "URLLC slice" or "GBR voice bearer" becomes real radio behaviour.</li>
+    <li><strong>Measurement configuration &amp; reports:</strong> RRC tells the UE <em>what</em> to measure (which cells/beams, thresholds, events A1–A6, filtering, TTT) and the UE returns <strong>measurement reports</strong>. Those reports feed the handover decisions modelled in §14.</li>
+  </ul>
+
+  <div class="note mid"><b class="tag">The link back to PHY</b>RRC mobility control <em>consumes</em> PHY measurements: RSRP/RSRQ/SINR per cell and per beam flow up as measurement reports, RRC applies the A3/A5 logic and offsets, and issues the handover command. So the clean layering has a feedback loop — low-layer radio quality (PHY) drives control-plane decisions (RRC), which reconfigure the low layers again. Most "network" behaviour users notice (attach time, wake-up latency, dropped calls on a corridor) is really this control-plane machinery reacting to radio conditions.</div>
+</section>
+<!-- ============ 11 MOBILITY ============ -->
+<section id="s11">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>14 · Mobility &amp; handover</div>
+  <h2>Staying Connected at 120 km/h</h2>
+
+  <h3>Intuition</h3>
+  <p>Handover is a bet placed under noise. Signal strength differences between cells fluctuate ±8 dB from shadowing, so "neighbor is stronger" for one instant means nothing. The network therefore demands the neighbor be stronger <em>by a margin</em> (hysteresis) <em>for a duration</em> (time-to-trigger). Set them too tight → <strong>ping-pong</strong> (bouncing between cells, signaling storms). Too loose → the UE clings to a dying cell until the radio link fails → <strong>drop</strong>. The optimum shifts with speed, which is why one static parameter set can never win — and why mobility was among the first AI/RIC use cases.</p>
+
+  <div class="formula">A3 event:  RSRP_neighbor > RSRP_serving + Offset + Hysteresis   for TTT ms
+Idle mode:  cell selection/reselection (UE-driven, S/R criteria)
+Connected:  measurement report → HO decision → prep over Xn → RRC Reconfig
+            → RACH to target → path switch.   Interruption ≈ 30–50 ms
+            (DAPS/LTM in Rel-17/18 push toward ~0 ms)</div>
+
+  <h3>The mobility family</h3>
+  <ul class="tight">
+    <li><strong>Intra-frequency HO:</strong> same carrier — the common case; measurements are free.</li>
+    <li><strong>Inter-frequency HO:</strong> requires measurement gaps (UE retunes away, costing throughput); used for load balancing and coverage layering (3.5 GHz → 700 MHz at the edge).</li>
+    <li><strong>Inter-RAT:</strong> NR ↔ LTE fallback (e.g., voice, coverage edges).</li>
+    <li><strong>Beam-level mobility (FR2):</strong> beam switches within a cell handled at L1/L2 — no RRC, milliseconds not tens of ms. 6G thinking pushes ever more mobility down to this cheap layer (and cell-free architectures aim to abolish the hard cell boundary entirely).</li>
+    <li><strong>Dual connectivity / CA mobility:</strong> anchor stability (low band) + fast secondary changes (mid/mmWave) — split the reliability problem from the capacity problem.</li>
+    <li><strong>MRO:</strong> mobility robustness optimization — the SON/rApp loop that tunes offsets per cell pair from HO failure statistics.</li>
+  </ul>
+
+  <div class="widget">
+    <header><span class="wtag">Widget 06</span><h4>Handover Simulator</h4><span class="sub">drive the corridor</span></header>
+    <div class="wbody">
+      <div class="wctl">
+        <div class="ctl"><label>Speed <output id="hoSpdO">60 km/h</output></label><input type="range" id="hoSpd" min="3" max="300" step="1" value="60"></div>
+        <div class="ctl"><label>Cell spacing <output id="hoGapO">1.0 km</output></label><input type="range" id="hoGap" min="400" max="3000" step="100" value="1000"></div>
+        <div class="ctl"><label>Hysteresis <output id="hoHystO">3 dB</output></label><input type="range" id="hoHyst" min="0" max="10" step="0.5" value="3"></div>
+        <div class="ctl"><label>Time-to-trigger <output id="hoTttO">160 ms</output></label><input type="range" id="hoTtt" min="0" max="640" step="40" value="160"></div>
+        <div class="ctl"><label>Shadowing σ <output id="hoShO">6 dB</output></label><input type="range" id="hoSh" min="0" max="12" step="1" value="6"></div>
+        <button class="wbtn" id="hoRun">Re-run drive test</button>
+      </div>
+      <div class="wout">
+        <canvas id="hoCanvas" width="640" height="330"></canvas>
+        <div class="stats">
+          <div class="stat"><div class="v" id="hoCount">–</div><div class="l">handovers</div></div>
+          <div class="stat"><div class="v" id="hoPp">–</div><div class="l">ping-pongs</div></div>
+          <div class="stat"><div class="v" id="hoFail">–</div><div class="l">failure risk</div></div>
+          <div class="stat"><div class="v" id="hoVerdict">–</div><div class="l">tuning verdict</div></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--ink2);margin-top:10px">Try: σ=8 dB, hysteresis 0, TTT 0 — count the ping-pongs. Then hysteresis 8, TTT 640 at 200 km/h — watch late-handover failure risk spike. The sweet spot moves with speed: that is the MRO problem in one canvas.</p>
+        <div class="mscope"><b>Model scope</b>A simplified mobility model (three cells along a road, correlated shadowing, A3-with-TTT and L3 filtering). Real handover decisions also depend on A5/other events, measurement filtering coefficients, cell individual offsets (CIO), load, beam-level mobility, dual connectivity, conditional handover, UE speed estimation and vendor mobility-robustness optimization. Treat the failure % as a qualitative indicator, not a KPI.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12 COVERAGE / CAPACITY / INTERFERENCE ============ -->
+<section id="s12">
+  <div class="eyebrow"><span class="band" style="background:var(--low)"></span>15 · Coverage · capacity · interference</div>
+  <h2>The Iron Triangle of RAN Design</h2>
+
+  <h3>Intuition</h3>
+  <p>In a noise-limited network you fight physics; in an interference-limited network you fight <em>yourself</em>. Dense urban grids are firmly the latter: most of the "noise" degrading a user's SINR is the operator's own neighboring cells. That's why simply adding power or sites eventually stops helping — every cell you add is both a server and an interferer.</p>
+
+  <h3>The measurement vocabulary</h3>
+  <table>
+    <tr><th>Metric</th><th>What it is</th><th>What it tells you</th></tr>
+    <tr><td class="k">RSRP</td><td>Avg power of one reference-signal RE</td><td>Pure coverage / path loss. Good ≳ −90 dBm; edge ≈ −110; dead &lt; −120</td></tr>
+    <tr><td class="k">RSSI</td><td>Total received power, everything included</td><td>Raw energy incl. interference — denominator material</td></tr>
+    <tr><td class="k">RSRQ</td><td>N·RSRP / RSSI</td><td>Signal <em>quality</em> vs load+interference; falls in busy cells even at strong RSRP</td></tr>
+    <tr><td class="k">SINR</td><td>S / (I + N)</td><td>The number that actually sets your MCS and throughput</td></tr>
+  </table>
+
+  <h3>Structural asymmetries every planner knows</h3>
+  <ul class="tight">
+    <li><strong>Uplink-limited coverage:</strong> the gNB shouts with 200+ W and a big array; the phone whispers with 0.2 W. A cell's true edge is usually where the <em>uplink</em> dies — the DL still looks fine on a coverage map. (TDD's DL-heavy duty cycle worsens this; UL carrier aggregation with low-band FDD is the standard rescue.)</li>
+    <li><strong>Pilot pollution:</strong> several cells arrive at similar strength → no dominant server → SINR poor everywhere despite great RSRP. Classic over-tilted-network / high-site disease.</li>
+    <li><strong>Cell breathing:</strong> a loaded cell's interference footprint grows and its usable edge shrinks — coverage is a function of traffic, not just geometry.</li>
+  </ul>
+
+  <h3>The coordination toolbox</h3>
+  <table>
+    <tr><th>Tool</th><th>Mechanism</th><th>Cost</th></tr>
+    <tr><td class="k">Power control (UL)</td><td>Fractional PC: cell-edge UEs don't fully compensate path loss → cap interference exported to neighbors</td><td>Edge UL rate</td></tr>
+    <tr><td class="k">ICIC / eICIC</td><td>Frequency/time partitioning between neighbors (ABS subframes for het-nets)</td><td>Reuse efficiency</td></tr>
+    <tr><td class="k">Load balancing</td><td>Shift users to underused carriers/cells via reselection priorities and HO offsets</td><td>Some users on weaker servers</td></tr>
+    <tr><td class="k">CoMP / coordination</td><td>Neighboring cells jointly schedule, beam-coordinate, or jointly transmit</td><td>Fronthaul/backhaul + CSI overhead — full-blown JT-CoMP is the intellectual ancestor of cell-free massive MIMO</td></tr>
+  </table>
+
+  <div class="note mid"><b class="tag">Use Widget 02 as your planning simulator</b>
+  The Coverage &amp; Capacity Simulator in Section 07 implements this section's physics: best-server SINR with inter-cell interference, load per site, and band-dependent path loss. Revisit it after reading this section — set 19 sites at 3.5 GHz and watch SINR <em>fall</em> in overlap zones as you densify without tilt discipline.</div>
+</section>
+<!-- ============ 26 UPLINK: THE LIMITING DIRECTION ============ -->
+<section id="s26">
+  <div class="eyebrow"><span class="band" style="background:var(--low)"></span>16 · Uplink: the limiting direction</div>
+  <h2>The Direction Everyone Forgets Until It Breaks</h2>
+
+  <h3>Intuition</h3>
+  <p>Marketing measures networks by download speed, so uplink gets designed as an afterthought — until FWA, video calls, live streaming, cloud backup and enterprise apps make it the bottleneck. The root cause is a power asymmetry the physics won't let you escape: the base station can shout, the handset can only whisper.</p>
+
+  <div class="note low"><b class="tag">The asymmetry in one paragraph</b>The UE is <strong>power-limited</strong> — a handset (power class 3) tops out around <strong>23 dBm (200 mW)</strong> of conducted Tx power, spread across whatever bandwidth it's granted. The gNB has far higher conducted RF power, large antenna gain and correspondingly high EIRP (see §07). So even when downlink RSRP looks healthy, the uplink may not reach the site — <em>downlink coverage does not prove uplink coverage.</em></p></div>
+
+  <h3>Why uplink runs out of headroom first</h3>
+  <ul class="tight">
+    <li><strong>Path loss is symmetric, power is not.</strong> The same path loss applies both ways, but the UE has ~an order of magnitude less power and gain to fight it. The result: an <strong>uplink coverage hole</strong> inside an area with fine downlink signal.</li>
+    <li><strong>Power headroom (PHR):</strong> the UE reports how much Tx power it has left. When a cell-edge or indoor UE hits its power ceiling, it can't take a higher MCS or a wider grant no matter how good the scheduler is — it is simply out of watts.</li>
+    <li><strong>Band choice hurts uplink most.</strong> Mid-band (3.5 GHz) has worse propagation than low-band; indoors this bites the power-limited uplink harder than the high-EIRP downlink.</li>
+    <li><strong>TDD slot scarcity.</strong> TDD spends most airtime on downlink (often ~75–80%), so the uplink gets fewer symbols <em>and</em> the UE is power-limited within them — a double penalty. This is the structural bottleneck that dynamic-TDD and SBFD try to relieve.</li>
+    <li><strong>Uplink MIMO is limited.</strong> Handsets have few Tx chains and tight power budgets, so uplink spatial multiplexing is far more constrained than the rich downlink mMIMO story.</li>
+  </ul>
+
+  <h3>The uplink toolkit</h3>
+  <table>
+    <tr><th>Element</th><th>Role</th></tr>
+    <tr><td class="k">PUSCH</td><td>Uplink shared data channel — the actual user payload path</td></tr>
+    <tr><td class="k">PUCCH</td><td>Uplink control — HARQ ACK/NACK, CSI reports, scheduling requests</td></tr>
+    <tr><td class="k">SRS (sounding)</td><td>Reference signal that lets the gNB estimate the uplink channel (and, via reciprocity, the downlink) — the enabler of TDD mMIMO precoding</td></tr>
+    <tr><td class="k">Power control</td><td>Open- and closed-loop control of UE Tx power vs path loss and interference</td></tr>
+    <tr><td class="k">DFT-s-OFDM</td><td>Lower-PAPR uplink waveform → more usable UE power at the cell edge</td></tr>
+    <tr><td class="k">SUL (supplementary uplink)</td><td>A paired low-band uplink carrier bonded to a mid/high-band cell, so the power-limited uplink can fall back to a frequency that actually reaches the site</td></tr>
+  </table>
+
+  <h3>Why some traffic stresses uplink differently</h3>
+  <p>Ordinary mobile broadband is download-heavy, so networks dimensioned for it look fine on paper. But <strong>FWA</strong> (home broadband over cellular), <strong>video upload</strong>, <strong>live streaming/creator traffic</strong>, <strong>video calls</strong> and <strong>enterprise/industrial uplink</strong> invert the ratio — they sustain high uplink for long periods from fixed or indoor locations. That is exactly where the power-limited, TDD-starved uplink runs out first, and where SUL, added site density, uplink-favourable TDD patterns and careful power control earn their keep.</p>
+
+  <div class="note low"><b class="tag">Practical takeaway</b>A user may see good downlink signal, but the cell can still be uplink-limited because the UE cannot transmit enough power back to the site — especially at mid-band or indoors. When diagnosing "slow" cells, check PUSCH SINR, power headroom and UL BLER, not just RSRP (see §17). Downlink RSRP alone never proves the uplink is healthy.</div>
+</section>
+<!-- ============ 27 DIAGNOSING RAN PROBLEMS (KPIs) ============ -->
+<section id="s27">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>17 · How operators diagnose RAN problems</div>
+  <h2>Reading the Network Through Its Counters</h2>
+
+  <h3>Intuition</h3>
+  <p>Operators don't "see" the radio — they see <strong>KPIs and counters</strong> exported by every cell, plus alarms and (increasingly) traces. The craft of RAN operations is turning a symptom ("users complain here") into a measurable pattern ("PUSCH SINR low, PHR pinned, UL BLER high") and then into an action ("add a low-band uplink layer"). The map below connects the concepts in this module to the signals a real RAN engineer actually watches.</p>
+
+  <h3>Symptom → KPI → cause → action</h3>
+  <table>
+    <tr><th>Problem</th><th>Useful KPIs / counters</th><th>Likely causes</th><th>Possible actions</th></tr>
+    <tr><td class="k">Poor coverage</td><td>RSRP, path loss, access failures</td><td>Low signal, poor indoor penetration, wrong antenna tilt, missing site</td><td>Add low-band layer, adjust tilt, add site/small cell, improve indoor solution</td></tr>
+    <tr><td class="k">Poor quality</td><td>SINR, RSRQ, CQI, BLER</td><td>Interference, overshooting cells, pilot/reference-signal issues</td><td>Tilt/azimuth optimisation, power adjustment, neighbour planning, interference coordination</td></tr>
+    <tr><td class="k">Congestion</td><td>PRB utilisation, scheduler delay, user-throughput distribution</td><td>High traffic load, insufficient spectrum, too few sites</td><td>Add carrier, refarm spectrum, add small cells, load balancing, sector split</td></tr>
+    <tr><td class="k">Random-access failures</td><td>RACH attempts, preamble collisions, access delay</td><td>Too many access attempts, poor coverage, wrong RACH configuration</td><td>Tune RACH parameters, improve coverage, add capacity</td></tr>
+    <tr><td class="k">Handover issues</td><td>HOF, RLF, ping-pong rate, too-early/too-late HO</td><td>Bad thresholds, poor neighbour list, fast fading, coverage gaps</td><td>Tune A3 offset, hysteresis, TTT, CIO, neighbour relations</td></tr>
+    <tr><td class="k">Poor uplink</td><td>PUSCH SINR, power headroom, UL BLER, UL throughput</td><td>UE power limitation, path loss, UL interference, TDD UL scarcity</td><td>Add SUL, improve site density, adjust UL power control, change TDD pattern</td></tr>
+    <tr><td class="k">Voice / real-time issues</td><td>VoNR/VoLTE setup failure, packet delay, jitter, drop rate</td><td>Coverage, mobility, core/RAN coordination, QoS misconfiguration</td><td>Check QoS flows, mobility, IMS/core path, coverage and interference</td></tr>
+    <tr><td class="k">Energy-saving side effects</td><td>Sleep-state success, wake-up latency, coverage degradation, traffic offload</td><td>Aggressive carrier/site sleep</td><td>Tune sleep thresholds, retain coverage layer, improve traffic prediction</td></tr>
+  </table>
+
+  <h3>How the pieces connect</h3>
+  <ul class="tight">
+    <li><strong>Distinguish coverage from quality.</strong> RSRP answers "is there enough signal?"; SINR/RSRQ/CQI/BLER answer "is that signal usable?" A cell can have strong RSRP and terrible SINR (interference-limited) — the fixes are completely different.</li>
+    <li><strong>Always check both directions.</strong> Downlink KPIs looking fine while uplink KPIs (PUSCH SINR, PHR, UL BLER) are poor is the classic uplink-limited signature from §16.</li>
+    <li><strong>Load vs coverage vs interference are separable.</strong> High PRB utilisation with good SINR is congestion (add capacity); low SINR with modest load is interference (optimise RF); low RSRP is coverage (add a layer/site).</li>
+    <li><strong>Mobility is a statistics problem.</strong> HOF/RLF/ping-pong rates per cell-pair are what MRO (and its rApp successors) actually optimise — the handover widget in §14 is a live picture of these counters.</li>
+    <li><strong>Energy saving has KPIs too.</strong> Aggressive sleep looks great on the power meter until wake-up latency and coverage-degradation counters reveal the customer-experience cost.</li>
+  </ul>
+</section>
+<!-- ============ 13 OPEN RAN ============ -->
+<section id="s13">
+  <div class="eyebrow"><span class="band" style="background:var(--high)"></span>18 · Open RAN &amp; Cloud RAN</div>
+  <h2>Opening the Black Box</h2>
+
+  <h3>Intuition</h3>
+  <p>Classic RAN is a vertically integrated appliance: one vendor's radio, baseband, software, and algorithms, coordinated over proprietary interfaces. O-RAN's bet is that the RAN can be rebuilt like a data center: open interfaces between disaggregated parts (O-RU / O-DU / O-CU), cloud infrastructure underneath, and — the genuinely new idea — a <strong>programmable control layer</strong> (the RICs) where third-party apps can read RAN state and steer its behavior.</p>
+
+  <div class="widget">
+    <header><span class="wtag">Widget 07</span><h4>O-RAN Architecture Explorer</h4><span class="sub">click any element</span></header>
+    <div class="wbody stack">
+      <div class="wout">
+        <svg id="oranSvg" viewBox="0 0 940 330" font-family="IBM Plex Mono,monospace">
+          <defs><marker id="arr3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="#3D4E5C"/></marker></defs>
+          <!-- SMO band -->
+          <g class="onode" data-k="smo"><rect x="20" y="18" width="900" height="66" rx="10" fill="#101B26"/><text x="470" y="42" font-size="12" fill="#fff" text-anchor="middle" font-weight="600">SMO — Service Management &amp; Orchestration</text></g>
+          <g class="onode" data-k="nrtric"><rect x="330" y="50" width="280" height="26" rx="6" fill="#E4E1F6" stroke="#5A4FBF"/><text x="470" y="67" font-size="10.5" text-anchor="middle" font-weight="600">Non-RT RIC (&gt;1 s) · hosts rApps</text></g>
+          <g class="onode" data-k="rapp"><rect x="640" y="50" width="120" height="26" rx="6" fill="#fff" stroke="#5A4FBF" stroke-dasharray="3 2"/><text x="700" y="67" font-size="10" text-anchor="middle">rApps</text></g>
+          <!-- A1 / O1 -->
+          <g stroke="#3D4E5C" stroke-width="1.3" marker-end="url(#arr3)">
+            <line x1="470" y1="84" x2="470" y2="128"/>
+            <line x1="120" y1="84" x2="120" y2="240"/>
+          </g>
+          <text x="480" y="110" font-size="10" fill="#3D4E5C">A1: policies, enrichment, ML models</text>
+          <text x="128" y="150" font-size="10" fill="#3D4E5C">O1: FCAPS mgmt</text>
+          <text x="128" y="163" font-size="10" fill="#3D4E5C">(to all functions)</text>
+          <!-- Near-RT RIC -->
+          <g class="onode" data-k="nearric"><rect x="330" y="130" width="280" height="52" rx="10" fill="#E4E1F6" stroke="#5A4FBF" stroke-width="1.5"/><text x="470" y="152" font-size="11.5" text-anchor="middle" font-weight="600">Near-RT RIC (10 ms – 1 s)</text><text x="470" y="168" font-size="9.5" text-anchor="middle" fill="#453C99">E2 subscriptions · conflict mediation</text></g>
+          <g class="onode" data-k="xapp"><rect x="640" y="143" width="120" height="26" rx="6" fill="#fff" stroke="#5A4FBF" stroke-dasharray="3 2"/><text x="700" y="160" font-size="10" text-anchor="middle">xApps</text></g>
+          <!-- E2 -->
+          <g stroke="#3D4E5C" stroke-width="1.3" marker-end="url(#arr3)"><line x1="420" y1="182" x2="330" y2="238"/><line x1="520" y1="182" x2="610" y2="238"/></g>
+          <text x="452" y="215" font-size="10" fill="#3D4E5C">E2: report/control</text>
+          <!-- RAN row -->
+          <g class="onode" data-k="ocu"><rect x="560" y="240" width="180" height="56" rx="10" fill="#DCEEE9" stroke="#0E7C6B" stroke-width="1.4"/><text x="650" y="263" font-size="11.5" text-anchor="middle" font-weight="600">O-CU (CP | UP)</text><text x="650" y="280" font-size="9" text-anchor="middle" fill="#0A5C4F">RRC · PDCP · SDAP</text></g>
+          <g class="onode" data-k="odu"><rect x="230" y="240" width="180" height="56" rx="10" fill="#DCEEE9" stroke="#0E7C6B" stroke-width="1.4"/><text x="320" y="263" font-size="11.5" text-anchor="middle" font-weight="600">O-DU</text><text x="320" y="280" font-size="9" text-anchor="middle" fill="#0A5C4F">RLC · MAC · hi-PHY · &lt;10 ms loops</text></g>
+          <g class="onode" data-k="oru"><rect x="30" y="240" width="130" height="56" rx="10" fill="#F7E4DA" stroke="#C25327" stroke-width="1.4"/><text x="95" y="263" font-size="11.5" text-anchor="middle" font-weight="600">O-RU</text><text x="95" y="280" font-size="9" text-anchor="middle" fill="#8A3A1B">low-PHY · RF</text></g>
+          <g stroke="#3D4E5C" stroke-width="1.3" marker-end="url(#arr3)"><line x1="410" y1="268" x2="560" y2="268"/><line x1="160" y1="268" x2="230" y2="268"/></g>
+          <text x="455" y="262" font-size="10" fill="#3D4E5C">F1</text>
+          <text x="168" y="262" font-size="10" fill="#3D4E5C">Open FH</text>
+          <g class="onode" data-k="cloud"><rect x="230" y="306" width="510" height="20" rx="6" fill="#fff" stroke="#C9D3DB"/><text x="485" y="320" font-size="9.5" text-anchor="middle" fill="#3D4E5C">O-Cloud: COTS servers · Kubernetes · accelerators · PTP timing</text></g>
+        </svg>
+        <div class="detail" id="oranDetail"><b>Click a block.</b> Note the two control-loop speeds: rApps think in minutes-to-days (policy, training); xApps act in 10 ms–1 s (per-UE steering). Anything faster lives inside the O-DU itself, beyond the RIC's reach.</div>
+      </div>
+    </div>
+    <div class="mscope"><b>Model scope</b>This diagram explains the main logical components and control loops. Real O-RAN deployments depend heavily on vendor integration, performance tuning, timing/sync design, security, observability, lifecycle management and the (still-maturing) maturity of xApps/rApps — see the reality-check note below.</div>
+  </div>
+
+  <h3>Why the 10 ms floor is physics, not politics</h3>
+  <p>An E2 round trip — DU exports state → RIC computes → control arrives back — costs several milliseconds of transport and processing. Meanwhile the scheduler makes a decision every 0.5 ms slot, and fast fading decorrelates in ~1 ms. By the time an xApp's command lands, the channel it was computed for is history. Hence the clean division: <strong>per-slot intelligence must be embedded in the O-DU</strong> (increasingly as trained models running inline), while the RIC layers steer parameters, policies, and slower loops.</p>
+
+  <h3>Benefits vs the integrator's tax</h3>
+  <table>
+    <tr><th>Benefits</th><th>Challenges</th></tr>
+    <tr><td>Vendor diversity &amp; negotiating leverage; best-of-breed RU/DU mixing</td><td>Integration burden shifts <em>to the operator</em> (or an SI): certifying RU×DU×CU×cloud combinations</td></tr>
+    <tr><td>Programmability: RIC apps turn RAN optimization into software</td><td>Fronthaul is unforgiving: 7.2x needs ~µs-class sync (PTP/SyncE), 25GE to sites</td></tr>
+    <tr><td>Cloud economics: pooling, CI/CD, horizontal scale</td><td>Performance parity with integrated RAN took years (accelerator maturity, energy per bit)</td></tr>
+    <tr><td>Innovation surface for startups &amp; operators' own algorithms</td><td>Conflict mediation: two xApps pulling one knob in opposite directions</td></tr>
+  </table>
+  <p>Reality check: greenfield operators (e.g., Rakuten in Japan, DISH in the US) proved cloud-native Open RAN can run a nationwide network; large brownfields (e.g., Vodafone's commitments, AT&amp;T's large-scale program with a single lead vendor) show the pragmatic middle path — open interfaces, but often anchored on one primary supplier.</p>
+
+  <div class="note low"><b class="tag">Reality check — read past the marketing</b>Open RAN is an <em>architecture choice</em>, not a guaranteed win. In practice:
+  <ul class="tight" style="margin:8px 0 0">
+    <li><strong>Not automatically cheaper.</strong> Hardware savings can be offset by integration, testing and lifecycle cost.</li>
+    <li><strong>Multivendor = integration burden.</strong> Someone (operator or SI) owns certifying RU×DU×CU×cloud combinations and their upgrades.</li>
+    <li><strong>Cross-boundary tuning is hard.</strong> Squeezing performance across DU/RU/vendor boundaries is harder than inside one vendor's stack.</li>
+    <li><strong>Open fronthaul ≠ feature parity.</strong> Interoperable interfaces don't guarantee identical feature sets or optimizations.</li>
+    <li><strong>Timing/sync is critical</strong> (see §05) — and now spans vendor boundaries.</li>
+    <li><strong>Energy can be worse</strong> if software and hardware acceleration aren't co-optimized.</li>
+    <li><strong>RIC / xApp / rApp ecosystems are still maturing</strong> — the app marketplace is thinner than slides suggest.</li>
+    <li><strong>Brownfield is harder than greenfield.</strong> Retrofitting open interfaces into a live multi-technology network carries far more risk than a clean build.</li>
+  </ul></div>
+</section>
+
+<!-- ============ 14 AI/ML IN RAN ============ -->
+<section id="s14">
+  <div class="eyebrow"><span class="band" style="background:var(--high)"></span>19 · AI/ML in the RAN</div>
+  <h2>From Hand-Tuned Rules to Learned Control</h2>
+
+  <h3>Intuition</h3>
+  <p>Classical RAN algorithms are hand-designed policies over simplified models. AI enters wherever (a) the real system is messier than the model, and (b) there is abundant data and a measurable reward. Two distinct frontiers matter — don't conflate them:</p>
+  <ul class="tight">
+    <li><span class="mat dep">DEPLOYED</span><strong>AI <em>around</em> the RAN (network automation):</strong> traffic prediction, anomaly detection, parameter optimization — rApps/xApps acting on 100 ms–days timescales. This is real and in production today (energy, MRO, load management).</li>
+    <li><span class="mat study">STUDY→SPEC</span><strong>AI <em>inside</em> the air interface (Rel-18/19):</strong> early study and specification work on <em>selected</em> functions — CSI feedback compression with <em>two-sided</em> models (encoder in the UE, decoder in the gNB — an interoperability, testing and generalization puzzle 3GPP is still working through), beam prediction (infer the best FR2 beam from sparse measurements), and ML positioning. This is an <strong>on-ramp toward an AI-native 6G interface, not a mature replacement for conventional PHY design</strong>. "AI-native RAN" and a fully "AI-native PHY" remain research directions.</li>
+  </ul>
+
+  <h3>Production use cases and their loops</h3>
+  <table>
+    <tr><th>Use case</th><th>Loop / host</th><th>Mechanism</th><th>Typical win</th></tr>
+    <tr><td class="k">Energy saving</td><td>rApp, minutes–hours</td><td>Forecast traffic → switch off carriers/mMIMO layers/deep-sleep radios; wake on demand</td><td>15–30% site energy</td></tr>
+    <tr><td class="k">Congestion prediction</td><td>rApp/xApp</td><td>Predict PRB utilization spikes before they hit → pre-emptive load balancing</td><td>QoE protection at events</td></tr>
+    <tr><td class="k">Mobility optimization</td><td>rApp (MRO)</td><td>Learn per-cell-pair offsets/TTT from HO failure &amp; ping-pong stats</td><td>Fewer drops on corridors</td></tr>
+    <tr><td class="k">mMIMO optimization</td><td>rApp/xApp</td><td>Tune beam patterns/tilt per cell to traffic geography</td><td>Cell-edge &amp; capacity gains</td></tr>
+    <tr><td class="k">Sleeping-cell detection</td><td>rApp</td><td>Anomaly detection on counters: cell up but serving nothing</td><td>Faster fault discovery than alarms</td></tr>
+    <tr><td class="k">Scheduler assist</td><td>in-DU model</td><td>Learned CQI prediction / PF weight shaping per slot</td><td>Efficiency at high mobility</td></tr>
+    <tr><td class="k">Beam prediction</td><td>UE/gNB PHY (Rel-18)</td><td>Spatial/temporal beam inference from few measurements</td><td>FR2 overhead &amp; latency cut</td></tr>
+  </table>
+
+  <h3>The honest caveats</h3>
+  <p>AI's advantage degrades exactly where you'd predict: when channel coherence collapses (predictions age out), when the deployment differs from training data (generalization), and when the reward is mis-specified (an energy rApp that "saves" power by degrading coverage). Hence the industry pattern: <strong>guard-railed AI</strong> — learned policies bounded by deterministic safety envelopes, and increasingly trained/validated inside digital twins before touching the live network. Which brings us to Section 20.</p>
+</section>
+<!-- ============ 15 DIGITAL TWIN ============ -->
+<section id="s15">
+  <div class="eyebrow"><span class="band" style="background:var(--high)"></span>20 · Digital twin networks</div>
+  <h2>A Sandbox Wired to Reality</h2>
+
+  <h3>Intuition</h3>
+  <p>A digital twin network (DTN) is a living virtual replica of the physical network — topology, configuration, traffic, and radio environment — fed continuously by real telemetry (ITU-T Y.3090 frames this as the data + model + mapping + interface quartet). Its value is <em>counterfactuals</em>: "what happens if I retilt these antennas / this cell fails / Saturday's match doubles traffic?" — answered in software, before risking the live network. It's also becoming the safe gym where RL-based RAN agents train.</p>
+
+  <table>
+    <tr><th>Twin type</th><th>What it consumes / models</th><th>Uses</th><th>Maturity</th></tr>
+    <tr><td class="k">Planning twin</td><td>Offline geo/clutter data, ray-traced propagation, site &amp; spectrum configs, traffic forecasts</td><td>Offline "what-if" analysis, coverage planning, traffic forecasting, site/spectrum planning</td><td><span class="mat dep">DEPLOYED</span> mature (RF planning tools are decades old)</td></tr>
+    <tr><td class="k">Operational twin</td><td>+ live counters, alarms, configuration, topology, traffic data</td><td>Network optimization, fault diagnosis, change validation, failure drills</td><td><span class="mat std">EMERGING</span> in OSS/SMO programs</td></tr>
+    <tr><td class="k">Real-/near-real-time twin</td><td>+ near-real-time state sync, validated models, closed loop to RIC</td><td>Closed-loop automation, anomaly detection, predictive maintenance, near-real-time optimization</td><td><span class="mat res">RESEARCH</span> hardest — needs strong data pipelines &amp; model validation</td></tr>
+  </table>
+
+  <div class="widget">
+    <header><span class="wtag">Widget 08</span><h4>Digital Twin Network Simulator</h4><span class="sub">break things safely</span></header>
+    <div class="wbody">
+      <div class="wctl">
+        <div class="ctl"><label>Traffic scenario</label>
+          <div class="seg" id="dtTraffic"><button data-v="0" class="on">normal</button><button data-v="1">rush</button><button data-v="2">event</button></div></div>
+        <div class="ctl"><label>Spectrum <output id="dtBwO">100 MHz</output></label><input type="range" id="dtBw" min="40" max="200" step="20" value="100"></div>
+        <div class="ctl"><label>Extra small cells <output id="dtSmallO">0</output></label><input type="range" id="dtSmall" min="0" max="4" value="0"></div>
+        <div class="ctl"><label>Fail a site</label>
+          <div class="seg" id="dtFail"><button data-v="-1" class="on">none</button><button data-v="0">S1</button><button data-v="2">S3</button><button data-v="4">S5</button></div></div>
+        <div class="ctl"><label>Mobility <output id="dtMobO">on</output></label>
+          <div class="seg" id="dtMob"><button data-v="1" class="on">on</button><button data-v="0">frozen</button></div></div>
+      </div>
+      <div class="wout">
+        <canvas id="dtCanvas" width="640" height="360"></canvas>
+        <div class="stats">
+          <div class="stat"><div class="v" id="dtCong">–</div><div class="l">congested cells</div></div>
+          <div class="stat"><div class="v" id="dtHole">–</div><div class="l">users in holes</div></div>
+          <div class="stat"><div class="v" id="dtQoe">–</div><div class="l">QoE forecast</div></div>
+          <div class="stat"><div class="v" id="dtRisk">–</div><div class="l">risk level</div></div>
+        </div>
+        <div class="detail" id="dtRec"><b>Twin recommendation:</b> baseline healthy.</div>
+        <p style="font-size:12.5px;color:var(--ink2);margin-top:10px">Try: fail S3 under "event" traffic — watch neighbors absorb its users, turn purple with load, and the twin recommend actions ranked by impact. This is exactly the drill operators run before concerts and storms.</p>
+        <div class="mscope"><b>Model scope</b>An educational digital-twin <em>concept</em> model. A real telecom twin requires live data ingestion, calibrated propagation and traffic models, topology data, performance counters, alarms, configuration data, validation loops and integration with OSS/SMO systems — and, for anything closed-loop, an explicit confidence estimate, risk assessment and often human approval before actions touch the live network.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 16 USE CASES & SLICING ============ -->
+<section id="s16">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>21 · Use cases &amp; network slicing</div>
+  <h2>One RAN, Many Contracts</h2>
+
+  <h3>The service triangle, and what each demands of the RAN</h3>
+  <table>
+    <tr><th>Class</th><th>Examples</th><th>Binding constraint</th><th>RAN levers</th></tr>
+    <tr><td class="k">eMBB</td><td>Video, FWA, AR/VR</td><td>Throughput, spectral efficiency</td><td>mMIMO, CA, 256QAM, wide TDD carriers</td></tr>
+    <tr><td class="k">URLLC</td><td>Industrial control, grid protection, remote ops</td><td>Latency ≤1–10 ms at 99.999%+</td><td>Mini-slots, configured grants, low BLER target, repetitions, pre-emption, edge UPF</td></tr>
+    <tr><td class="k">mMTC / RedCap</td><td>Meters, sensors, wearables</td><td>Density, device cost, 10-yr battery</td><td>Narrow BWPs, relaxed capabilities, extended DRX/eDRX, coverage enhancement</td></tr>
+    <tr><td class="k">Verticals</td><td>Private industrial 5G, smart city, transport, healthcare, public safety</td><td>Isolation, SLA, determinism, sovereignty</td><td>Slicing, private/dedicated spectrum, local core, TSN integration</td></tr>
+  </table>
+
+  <h3>Slicing: an SLA that reaches the scheduler</h3>
+  <p>A slice is an end-to-end logical network — its identity (S-NSSAI) rides from the core through transport into the RAN, where it must finally become something physical: <strong>a resource-partitioning policy in the MAC</strong>. Typical RAN slicing model: guaranteed PRB share + optional cap + priority class, e.g. "utility slice: ≥15% PRBs, latency class URLLC; consumer eMBB: best effort over the remainder; idle capacity borrowable." Core slicing gives dedicated UPF/SMF instances; transport slicing gives VPN/TSN lanes. The perennially hard part is <strong>SLA assurance</strong> — proving isolation held during the busy hour, which is precisely the per-slice analytics loop NWDAF + RIC apps are built for.</p>
+
+  <div class="note mid"><b class="tag">Same RAN, three tenants — a worked picture</b>
+  One n78 100 MHz TDD carrier at a port: (1) crane teleoperation slice — configured grants + mini-slots, 10 MHz-equivalent guaranteed, 5 ms budget; (2) camera/analytics slice — UL-heavy, 30% share, borrowable; (3) staff eMBB — best effort. The scheduler enforces all three every 0.5 ms; the twin verifies the SLA survives a traffic surge before the contract is signed.</div>
+</section>
+
+<!-- ============ 17 ENERGY ============ -->
+<section id="s17">
+  <div class="eyebrow"><span class="band" style="background:var(--low)"></span>22 · Energy efficiency</div>
+  <h2>Watts Are the New Spectrum</h2>
+
+  <h3>Intuition</h3>
+  <p>The RAN is usually the dominant contributor to a mobile operator's network energy — commonly cited as <strong>~70–80%</strong> in many operator contexts, with radios consuming most of that. The exact share varies with operator, geography, site mix, cooling, legacy-network share and where you draw the accounting boundary, so treat it as a strong rule of thumb rather than a fixed constant. The crucial fact: a conventional site's power is dominated by <em>load-independent</em> terms — PAs biased on, transceivers powered, cooling running — so an idle cell still burns 50–70% of its peak power. Energy saving is therefore mostly about <strong>turning hardware off, gracefully, and predicting when you'll need it back</strong>.</p>
+
+  <div class="formula">P_site ≈ N_TRX · ( P₀  +  Δp · P_out · load )      [+ cooling overhead]
+          load-independent ↑        ↑ traffic-proportional
+Levers: symbol muting (µs) → channel/carrier shutdown (s–min)
+        → mMIMO element muting 64→32→16 → deep sleep (min–h) → site off</div>
+
+  <div class="widget">
+    <header><span class="wtag">Widget 09</span><h4>Energy Optimization Simulator</h4><span class="sub">watts vs coverage vs capacity</span></header>
+    <div class="wbody">
+      <div class="wctl">
+        <div class="ctl"><label>Traffic load <output id="enLoadO">35%</output></label><input type="range" id="enLoad" min="0" max="100" value="35"></div>
+        <div class="ctl"><label>Active carriers <output id="enCarO">3</output></label><input type="range" id="enCar" min="1" max="4" value="3"></div>
+        <div class="ctl"><label>mMIMO elements <output id="enAntO">64</output></label><input type="range" id="enAnt" min="0" max="2" step="1" value="0"></div>
+        <div class="ctl"><label>Sleep policy</label>
+          <div class="seg" id="enSleep"><button data-v="0" class="on">none</button><button data-v="1">symbol</button><button data-v="2">deep</button></div></div>
+        <div class="ctl"><label>Coverage floor <output id="enCovO">strict</output></label>
+          <div class="seg" id="enCov"><button data-v="1" class="on">strict</button><button data-v="0">relaxed</button></div></div>
+      </div>
+      <div class="wout">
+        <canvas id="enCanvas" width="640" height="280"></canvas>
+        <div class="stats">
+          <div class="stat"><div class="v" id="enPwr">–</div><div class="l">site power</div></div>
+          <div class="stat"><div class="v" id="enSave">–</div><div class="l">saving vs max</div></div>
+          <div class="stat"><div class="v" id="enCap">–</div><div class="l">capacity headroom</div></div>
+          <div class="stat"><div class="v" id="enRiskV">–</div><div class="l">degradation risk</div></div>
+        </div>
+        <p style="font-size:12.5px;color:var(--ink2);margin-top:10px">Try: 15% night load — shut carriers to 1, mute mMIMO to 16, enable deep sleep. Big saving, low risk. Now replay the same policy at 70% load and watch headroom vanish: energy saving is a <em>forecasting</em> problem wearing a hardware costume.</p>
+        <div class="mscope"><b>Model scope</b>A simplified energy–performance model with illustrative power figures. Real energy saving depends on traffic prediction, coverage-retention constraints, wake-up latency, carrier-shutdown and massive-MIMO sleep-mode policies, hardware efficiency curves, customer-experience risk and regulatory obligations. The watt values here are representative, not measured for any specific radio.</div>
+      </div>
+    </div>
+  </div>
+
+  <ul class="tight">
+    <li><strong>5G-A "NES" work:</strong> on-demand SSB/SIB (stop always-on beacons), cell DTX/DRX, UE-assisted wake-up — attacking the always-on tax at the standard level.</li>
+    <li><strong>Structural levers:</strong> newer radios (GaN PAs), lean-carrier design, renewable-powered sites, and the awkward truth that mMIMO improves bits/joule while raising absolute watts per site.</li>
+  </ul>
+</section>
+<!-- ============ 18 5G-A & 6G ============ -->
+<section id="s18">
+  <div class="eyebrow"><span class="band" style="background:var(--high)"></span>23 · 5G-Advanced &amp; 6G</div>
+  <h2>What Comes Next — Sorted by How Real It Is</h2>
+
+  <div class="matkey">Maturity key:
+    <span class="mat dep">DEPLOYED</span><span class="mat std">STANDARDIZED</span>
+    <span class="mat study">STUDY ITEM</span><span class="mat res">RESEARCH</span><span class="mat spec">SPECULATIVE</span>
+  </div>
+
+  <h3>5G-Advanced (Rel-18/19/20): the deployable frontier</h3>
+  <ul class="tight">
+    <li><span class="mat std">STANDARDIZED</span><strong>MIMO evolution:</strong> more UL layers/panels, DL coherent multi-TRP, better codebooks — squeezing the mid-band harder. Shipping in Rel-18 devices/networks.</li>
+    <li><span class="mat study">STUDY→SPEC</span><strong>AI/ML air interface:</strong> early 5G-Advanced study and specification work on <em>selected</em> functions — CSI feedback compression, beam management, and positioning. This is an on-ramp toward AI-native 6G, <em>not</em> a mature replacement for conventional PHY design; two-sided-model interoperability, testing and generalization are open problems.</li>
+    <li><span class="mat dep">DEPLOYED</span><strong>RedCap → eRedCap:</strong> cheap mid-tier devices (wearables, sensors, video) — filling the gap LTE Cat-1/4 used to serve. RedCap is commercially live; eRedCap follows in Rel-18.</li>
+    <li><span class="mat study">STUDY ITEM</span><strong>ISAC:</strong> Rel-19 studies channel models and use cases for sensing objects (drones, intruders, traffic) with communication waveforms. Study-item stage — no commercial NR sensing service yet.</li>
+    <li><span class="mat std">STANDARDIZED</span><strong>XR awareness:</strong> the scheduler learns application frames exist (PDU sets, jitter-aware delay budgets) — cross-layer at last. Specified in Rel-18.</li>
+    <li><span class="mat std">STD</span> <strong>NES</strong> (network energy saving) &amp; <strong>NTN enhancements</strong>, <span class="mat std">STD</span> cm-class positioning, and <span class="mat study">STUDY</span> <strong>SBFD</strong> (sub-band full duplex: DL while receiving UL in one TDD carrier — attacking the UL bottleneck, at the cost of brutal self-interference cancellation; still a study/research topic, not deployed).</li>
+  </ul>
+
+  <h3>6G — the design space</h3>
+  <div class="note high"><b class="tag">On timing</b>6G is generally aligned with the <strong>ITU IMT-2030</strong> timeframe, with early specifications (around 3GPP Rel-21) expected before commercial maturity. Actual deployment timelines will vary by region, spectrum availability, vendor-ecosystem readiness and operator investment cycles — <em>treat "2030" as a framing horizon, not a guaranteed commercial launch date.</em></div>
+  <table>
+    <tr><th>Candidate</th><th>Core idea</th><th>Maturity</th></tr>
+    <tr><td class="k">AI-native interface</td><td>Learning inside every control loop; possibly learned transceivers end-to-end</td><td><span class="mat study">STUDY</span> Rel-18/19 AI/ML work is the on-ramp; "native" is a research direction</td></tr>
+    <tr><td class="k">7–15 GHz (FR3)</td><td>Mid-band-ish reach + wider bandwidth, giant arrays</td><td><span class="mat res">RESEARCH</span> Strong 6G capacity candidate — <em>may</em> beat mmWave's bandwidth/coverage compromise, but availability, regulation, coexistence (incumbents), propagation, device ecosystem and deployment economics are all still open</td></tr>
+    <tr><td class="k">ISAC / sensing-native</td><td>Network as multistatic radar: JCAS waveforms, sensing KPIs</td><td><span class="mat res">RESEARCH</span> Monostatic demos exist; networked/multistatic sensing is a research direction; Rel-19 study items on the 5G side</td></tr>
+    <tr><td class="k">Cell-free mMIMO</td><td>Many distributed APs coherently serve each user — user-centric clusters, no cell edge</td><td><span class="mat res">RESEARCH</span> Testbeds/early trials; fronthaul volume and phase-sync are the hard dragons</td></tr>
+    <tr><td class="k">RIS</td><td>Programmable reflectors sculpting propagation</td><td><span class="mat spec">SPECULATIVE</span> Niche coverage-patch trials; scaling, control overhead and business case unproven</td></tr>
+    <tr><td class="k">Sub-THz (100–300 GHz)</td><td>Tens of GHz of bandwidth for short-range extreme rates &amp; sensing</td><td><span class="mat spec">SPECULATIVE</span> for access (aperture collapse, O₂/H₂O absorption); more <span class="mat res">RESEARCH</span>-credible for backhaul/fixed links</td></tr>
+    <tr><td class="k">Semantic communication</td><td>Transmit meaning/task-relevant features, not bits</td><td><span class="mat spec">SPECULATIVE</span> Collides with layering &amp; interop as we know it; pre-standard</td></tr>
+    <tr><td class="k">NTN-native / DTN / zero-energy IoT</td><td>Satellites as peers; twins in the loop; battery-free backscatter devices</td><td><span class="mat res">RESEARCH</span> Strong momentum; NTN already standardized on the 5G side, "native" integration is forward-looking</td></tr>
+  </table>
+
+  <div class="widget">
+    <header><span class="wtag">Widget 10</span><h4>5G → 6G Evolution Map</h4><span class="sub">click a technology track</span></header>
+    <div class="wbody stack">
+      <div class="wout">
+        <canvas id="evCanvas" width="900" height="380"></canvas>
+        <div class="detail" id="evDetail"><b>Click a track node</b> to see how that technology thread evolves across LTE → Rel-15/16 → Rel-17 → Rel-18/19 (5G-A) → Rel-21+ (6G).</div>
+      </div>
+    </div>
+    <div class="mscope"><b>Model scope</b>A qualitative roadmap for orientation, not a commitment or schedule. Release contents shift, and 6G-column entries are candidates aligned with the IMT-2030 horizon — read them alongside the maturity key above, and remember timelines vary by region, spectrum and ecosystem readiness.</div>
+  </div>
+</section>
+
+<!-- ============ 19 NTN ============ -->
+<section id="s19">
+  <div class="eyebrow"><span class="band" style="background:var(--high)"></span>24 · Non-terrestrial networks</div>
+  <h2>When the Cell Tower Orbits at 7.5 km/s</h2>
+
+  <h3>Intuition</h3>
+  <p>NTN inverts every terrestrial assumption. The "site" moves faster than any user (LEO ground track ~7.5 km/s), the propagation delay dwarfs the frame structure, and one beam covers a small country. NR-NTN (Rel-17+) kept the NR waveform but rebuilt the timing machinery around it.</p>
+
+  <table>
+    <tr><th>Platform</th><th>Altitude</th><th>One-way delay</th><th>Character</th></tr>
+    <tr><td class="k">LEO</td><td>500–1,200 km</td><td>~2–7 ms</td><td>Constellations (100s–1,000s sats); handover every few minutes; direct-to-device viable</td></tr>
+    <tr><td class="k">MEO</td><td>~8,000–20,000 km</td><td>~30–70 ms</td><td>Fewer sats, backhaul-oriented</td></tr>
+    <tr><td class="k">GEO</td><td>35,786 km</td><td>~120 ms (240 RTT)</td><td>Fixed in sky; broadcast/broadband, hopeless for interactive latency</td></tr>
+    <tr><td class="k">HAPS / UAV</td><td>18–25 km / &lt;5 km</td><td>&lt;0.1 ms</td><td>Quasi-stationary coverage patches; disaster response</td></tr>
+  </table>
+
+  <h3>What NTN forces onto the radio design</h3>
+  <ul class="tight">
+    <li><strong>Timing:</strong> RTT up to ~540 ms (GEO) vs terrestrial µs. Fix: UEs use GNSS + broadcast ephemeris to <em>pre-compensate</em> delay and Doppler; HARQ gets huge (or disabled) process counts; scheduling offsets (K_offset) stretch the timeline.</li>
+    <li><strong>Doppler:</strong> LEO at S-band ⇒ up to ~±48 kHz shift with fast drift — pre-compensated per beam center, residual handled by the UE.</li>
+    <li><strong>Mobility inversion:</strong> "earth-moving" beams sweep users every few minutes even if nobody moves — handover becomes ephemeris-driven and predictable (conditional handover shines here).</li>
+    <li><strong>Link budget:</strong> direct-to-device to an unmodified phone closes only with enormous satellite arrays (~100+ m² class) and low-band/S-band spectrum — hence messaging-first services (e.g., smartphone-to-satellite SOS/texting) before broadband.</li>
+  </ul>
+
+  <p><strong>Roles in the system:</strong> coverage extension (oceans, deserts, aviation), resilient backhaul for remote sites, IoT everywhere (Rel-17 IoT-NTN), and in 6G ambitions a genuinely <em>integrated</em> 3D network where terrestrial and orbital layers share spectrum, mobility management, and eventually regenerative on-board gNBs with inter-satellite laser mesh.</p>
+</section>
+
+<!-- ============ 20 CASE STUDIES ============ -->
+<section id="s20">
+  <div class="eyebrow"><span class="band" style="background:var(--low)"></span>25 · Operator case studies</div>
+  <h2>Eight Problems from the Real Network</h2>
+
+  <table>
+    <tr><th>Problem</th><th>Likely cause</th><th>Key parameters</th><th>Solution path</th><th>Trade-offs</th></tr>
+    <tr><td class="k">Stadium congestion on match day</td><td>10–50× localized demand; UL (uploads!) saturates first</td><td>PRB utilization, RACH load, UL SINR</td><td>Event small cells/DAS, mmWave, UL-heavy TDD pattern via twin rehearsal, admission control, slice for public safety</td><td>CAPEX idle 350 days/yr → neutral-host economics</td></tr>
+    <tr><td class="k">Rural village, poor indoor coverage</td><td>Mid-band can't penetrate; site too far; UL-limited</td><td>RSRP indoors, UL MCS floor, band priorities</td><td>Deploy/refarm low-band (700/800), SUL pairing, repeaters/FWA external antennas</td><td>Low-band capacity is thin — coverage yes, Netflix maybe</td></tr>
+    <tr><td class="k">Motorway handover failures</td><td>Static HO params vs 130 km/h; late HOs at cell edges</td><td>Hysteresis, TTT, per-pair offsets, HOF/ping-pong counters</td><td>MRO rApp: speed-aware profiles, conditional handover; sectorize along the road</td><td>Aggressive params ping-pong slow users on the same cells</td></tr>
+    <tr><td class="k">City-centre interference</td><td>Pilot pollution: high sites, over-shooting, no dominant server</td><td>SINR vs RSRP maps, tilt, power, overlap %</td><td>Tilt optimization (AI rApp), power rebalancing, sectorization discipline</td><td>Downtilt fixes overlap but can open coverage holes — iterate in the twin</td></tr>
+    <tr><td class="k">Site failure overloads neighbors</td><td>Coverage-triggered re-selection dumps users onto edges of neighbors</td><td>Neighbor PRB load, cell reselection priorities, cell breathing</td><td>Automated compensation: neighbors uptilt/raise power temporarily; load-based HO offsets; prioritize repair via impact ranking</td><td>Compensation raises interference elsewhere — it's triage, not cure</td></tr>
+    <tr><td class="k">Refarm 3G → 5G</td><td>Legacy 2100 MHz underused; 5G FDD needed for coverage/DSS exit</td><td>3G traffic residue, M2M stragglers, roamer impact</td><td>Sunset campaign, carrier re-license, NR FDD or DSS transition, VoLTE completeness first</td><td>Last 2% of 3G devices (alarms, telematics) cost more than the spectrum earns</td></tr>
+    <tr><td class="k">Enterprise wants private 5G</td><td>Factory needs deterministic wireless + data sovereignty</td><td>Local spectrum (CBRS/n77 local), on-prem UPF, URLLC configs, TSN</td><td>Standalone private network or network-slice hybrid; dedicated DU/RU indoors; local core for data-never-leaves-site</td><td>Full private = control but you become an operator; slice = simpler but shared-fate</td></tr>
+    <tr><td class="k">Cut energy overnight</td><td>3 am traffic ≈ 5–10% of peak but site burns 60% of peak power</td><td>Load forecasts, carrier/mMIMO sleep states, wake latency, coverage floor</td><td>AI energy rApp: forecast → shut capacity carriers &amp; mute arrays, keep low-band coverage layer alive; twin-verified coverage floor</td><td>Mis-forecast a 4 am surge (logistics hub!) → QoS incident; guard-rails mandatory</td></tr>
+  </table>
+
+  <div class="note mid"><b class="tag">The meta-pattern</b>
+  Every case reduces to the same loop: <em>observe (counters/probes) → localize the binding constraint (coverage? capacity? interference? UL or DL?) → simulate the fix (twin) → actuate (params/hardware) → verify.</em> Expertise is mostly speed and accuracy at step two.</div>
+</section>
+<!-- ============ 21 GLOSSARY ============ -->
+<section id="s21">
+  <div class="eyebrow"><span class="band" style="background:var(--mid)"></span>26 · Glossary</div>
+  <h2>Working Vocabulary</h2>
+  <details class="gloss"><summary>AAU / RU — Active Antenna Unit / Radio Unit</summary><p>The mast-top box converting digital samples ↔ RF. AAU integrates the antenna array and 32–64 transceivers for massive MIMO.</p></details>
+  <details class="gloss"><summary>BLER / HARQ</summary><p>Block Error Rate — fraction of transport blocks failing CRC. HARQ retransmits with soft combining; first-transmission BLER is deliberately targeted near 10%.</p></details>
+  <details class="gloss"><summary>BWP — Bandwidth Part</summary><p>A configured sub-slice of the carrier a UE operates in; enables power saving and device-capability tiering (RedCap).</p></details>
+  <details class="gloss"><summary>CA / DSS</summary><p>Carrier Aggregation bonds carriers across bands. Dynamic Spectrum Sharing time-multiplexes LTE and NR on one carrier during migration.</p></details>
+  <details class="gloss"><summary>CQI / PMI / RI</summary><p>The UE's channel report: quality index (→MCS), precoder matrix index (→beam/precoding), rank indicator (→number of MIMO layers).</p></details>
+  <details class="gloss"><summary>CU / DU — Centralized / Distributed Unit</summary><p>The gNB's split brain: CU runs PDCP/SDAP/RRC (ms-tolerant, centralizable); DU runs RLC/MAC/high-PHY (slot-deadline real time).</p></details>
+  <details class="gloss"><summary>eCPRI / Open Fronthaul</summary><p>Packet-based fronthaul carrying frequency-domain IQ between DU and RU (split 7.2x), with C/U/S/M planes; needs µs-class PTP synchronization.</p></details>
+  <details class="gloss"><summary>ISAC / JCAS</summary><p>Integrated Sensing and Communication — using the network's waveforms and infrastructure as a distributed radar while communicating; 6G's second product.</p></details>
+  <details class="gloss"><summary>LDPC / Polar</summary><p>NR's channel codes: LDPC for data (parallel, high-throughput, flexible rates), Polar for control (optimal at short blocks).</p></details>
+  <details class="gloss"><summary>MCS — Modulation &amp; Coding Scheme</summary><p>The joint choice of QAM order and code rate per transmission — the output of link adaptation.</p></details>
+  <details class="gloss"><summary>MU-MIMO / SU-MIMO</summary><p>Spatial multiplexing across users vs to one user. MU-MIMO is the capacity multiplier of mid-band 5G; demands accurate CSI and spatially separated users.</p></details>
+  <details class="gloss"><summary>Numerology (µ) / SCS</summary><p>NR's scalable OFDM parameterization: SCS = 15·2^µ kHz; sets symbol/slot duration, CP length, latency floor, and Doppler tolerance.</p></details>
+  <details class="gloss"><summary>NWDAF</summary><p>The 5G core's analytics function — the standardized home for network-data ML on the core side (the RIC's counterpart in the RAN).</p></details>
+  <details class="gloss"><summary>PRB / RE</summary><p>Physical Resource Block (12 subcarriers) and Resource Element (1 subcarrier × 1 symbol) — the currency the scheduler spends.</p></details>
+  <details class="gloss"><summary>RIC / xApp / rApp</summary><p>RAN Intelligent Controllers: Near-RT RIC hosts xApps (10 ms–1 s control via E2); Non-RT RIC in the SMO hosts rApps (&gt;1 s policy/training via A1/O1).</p></details>
+  <details class="gloss"><summary>RSRP / RSRQ / SINR</summary><p>Coverage (per-RE reference power), quality ratio (RSRP vs total received), and the ratio that actually determines throughput.</p></details>
+  <details class="gloss"><summary>SBFD</summary><p>Sub-band full duplex: gNB transmits and receives simultaneously in different sub-bands of one TDD carrier — a 5G-A/6G attack on the uplink bottleneck, gated by self-interference cancellation.</p></details>
+  <details class="gloss"><summary>SSB / PRACH</summary><p>The beam-swept sync/broadcast beacon a UE finds first, and the random-access channel it answers on — the front door of every connection.</p></details>
+  <details class="gloss"><summary>SRS — Sounding Reference Signal</summary><p>UL pilot that, via TDD reciprocity, reveals the DL channel — the fuel of reciprocity-based massive MIMO precoding.</p></details>
+  <details class="gloss"><summary>S-NSSAI / 5QI</summary><p>Slice identity and QoS class identifiers — how service contracts travel from core policy down to per-slot scheduler behavior.</p></details>
+  <details class="gloss"><summary>UPF / AMF / SMF</summary><p>The 5G core trio the RAN talks to: user-plane forwarding (placeable at the edge), access &amp; mobility management, session management.</p></details>
+</section>
+
+<!-- ============ 22 TAKEAWAYS ============ -->
+<section id="s22">
+  <div class="eyebrow"><span class="band" style="background:linear-gradient(90deg,var(--low),var(--mid),var(--high))"></span>27 · Key takeaways</div>
+  <h2>Ten Ideas That Organize Everything Else</h2>
+  <div class="takeaways"><ol class="tight">
+    <li><strong>Four resources, one scheduler.</strong> Frequency, time, space, power — every RAN feature is a new way to allocate one of them.</li>
+    <li><strong>Latency budgets place hardware.</strong> HARQ pins the DU near the RU; PDCP frees the CU; URLLC pulls the UPF to the edge. Geography is a protocol consequence.</li>
+    <li><strong>Cloud ≠ centralized ≠ open.</strong> Implementation style, physical placement, and interface openness are three independent axes.</li>
+    <li><strong>Spectrum bands are roles, not speeds.</strong> Low = coverage layer, mid = workhorse, mmWave = capacity islands. A network is a portfolio.</li>
+    <li><strong>Massive MIMO is an information problem.</strong> The array is easy; fresh accurate CSI is the whole game — hence TDD reciprocity, SRS, and now AI-predicted channels.</li>
+    <li><strong>The uplink is the real edge.</strong> 0.2 W phones vs 200 W towers, plus TDD's DL-heavy duty cycle: most coverage and capacity crises are UL crises.</li>
+    <li><strong>Everything is a control loop with a timescale.</strong> Per-slot (in-DU) → 10 ms–1 s (xApps) → minutes+ (rApps). Match the intelligence to the loop it can actually close.</li>
+    <li><strong>Aggressive-plus-recovery beats cautious.</strong> HARQ at 10% BLER, PF riding fading peaks, sleep modes with fast wake: 3GPP design taste in one principle.</li>
+    <li><strong>Energy is mostly load-independent.</strong> Saving watts means switching hardware off — which makes energy efficiency a traffic-forecasting problem.</li>
+    <li><strong>6G's bet is learned + sensing-native.</strong> 5G made networks programmable; 5G-A makes them learnable; 6G asks the network to perceive the world and design its own behavior — inside guard rails humans still set.</li>
+  </ol></div>
+  <p style="font-family:var(--mono);font-size:12px;color:var(--ink2)">Suggested deep-dive order from here: SBFD self-interference budgets → cell-free fronthaul math → Rel-18 two-sided CSI model interoperability → ISAC capacity–distortion trade-off. Each is one question away.</p>
+</section>
+<!-- ============ 28 STANDARDS & REFERENCES ============ -->
+<section id="s28">
+  <div class="eyebrow"><span class="band" style="background:linear-gradient(90deg,var(--low),var(--mid),var(--high))"></span>28 · Standards &amp; references</div>
+  <h2>Where These Ideas Are Actually Defined</h2>
+  <p>These are anchors, not academic citations — the bodies and documents to go to when you want the authoritative version of anything in this module. Where a claim here touches a standard, treat the source below as the ground truth.</p>
+
+  <table>
+    <tr><th>Body</th><th>Owns</th><th>Use it for</th></tr>
+    <tr><td class="k">3GPP</td><td>LTE, 5G NR, 5G Core, 5G-Advanced, NR-NTN</td><td>The radio and core specifications themselves — releases (Rel-15…21), NR PHY/MAC/RRC, 5GC, RedCap, NES, positioning, AI/ML-for-air-interface study &amp; work items, ISAC study items</td></tr>
+    <tr><td class="k">O-RAN Alliance</td><td>Open RAN, RIC, SMO, Open Fronthaul</td><td>The disaggregated architecture, E2/A1/O1 interfaces, Open Fronthaul (7.2x) profile, Non-RT/Near-RT RIC, rApp/xApp frameworks</td></tr>
+    <tr><td class="k">ITU-R</td><td>IMT-2020 (5G) and IMT-2030 (6G) frameworks</td><td>The global capability/vision framing and spectrum context — including the IMT-2030 usage scenarios that shape 6G targets and timelines</td></tr>
+    <tr><td class="k">ITU-T</td><td>Transport, timing, digital twin networking</td><td>Sync profiles (G.8275.1 PTP, G.8262 SyncE), and Y.3090 for digital-twin-network architecture</td></tr>
+    <tr><td class="k">IEEE</td><td>Timing, LAN/PHY, sensing</td><td>1588 (PTP), Ethernet/SyncE physical layer, 802.11bf (WLAN sensing), 802.15.3d (sub-THz) as adjacent references</td></tr>
+    <tr><td class="k">GSMA / NGMN</td><td>Operator-oriented guidance</td><td>Deployment, architecture and requirements framing from the operator community — practical intent behind the specs</td></tr>
+  </table>
+
+  <div class="note"><b class="tag">On vendor material</b>Vendor white papers are useful for <em>explanation</em> and real deployment colour, but they are secondary sources — verify architecture and standards claims against 3GPP / O-RAN / ITU before treating them as definitive. Where this module gives specific numbers (latencies, power figures, TDD ratios), they are representative teaching values; the authoritative figures live in the documents above and in an operator's own measured data.</div>
+</section>
+</main>
+</div>
+<script>
+/* ============================== helpers ============================== */
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const dB2lin=d=>Math.pow(10,d/10), lin2dB=l=>10*Math.log10(Math.max(l,1e-30));
+function seg(id,cb){const el=$(id);el.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{el.querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');cb(b.dataset.v);}));}
+function segVal(id){return $(id).querySelector('button.on').dataset.v;}
+const SE=s=>Math.min(0.75*Math.log2(1+dB2lin(s)),7.4); // truncated Shannon
+
+/* scroll spy */
+const links=[...document.querySelectorAll('nav#axis li a')];
+const secs=links.map(a=>document.querySelector(a.getAttribute('href')));
+const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){links.forEach(l=>l.classList.remove('active'));const i=secs.indexOf(e.target);if(i>=0)links[i].classList.add('active');}});},{rootMargin:'-20% 0px -70% 0px'});
+secs.forEach(s=>s&&io.observe(s));
+
+/* ============================== W01 architecture explorer ============================== */
+const ARCH={
+ ue:['UE — User Equipment','Runs the full protocol stack in miniature (PHY→PDCP→NAS). Its PA is ~23 dBm (0.2 W) — 30 dB below the gNB, which is why coverage is usually uplink-limited. Mis-dimensioning: cheap devices with fewer RX antennas quietly shrink your effective cell.'],
+ ru:['Radio Unit + antenna','RF chains, PAs, LNAs, filters, DAC/ADC, low-PHY (FFT/CP, beamforming) under split 7.2x. Consumes most site energy. Fronthaul one-way latency budget (with packetization, switching, sync) usually keeps the DU within single-digit to a few tens of km of the RU — the exact reach is transport- and vendor-dependent. Mis-dimensioning: undersized fronthaul → IQ compression artifacts → EVM floor → 256QAM never engages.'],
+ du:['Distributed Unit','High-PHY (channel est., equalization, LDPC), MAC scheduler, HARQ, RLC. Hard real-time: decisions every slot (0.5 ms @30 kHz). Runs on COTS + accelerators in vRAN. Mis-dimensioning: CPU starvation → missed slot deadlines → HARQ chaos, not graceful slowdown.'],
+ cu:['Centralized Unit','PDCP (ciphering, reordering), SDAP (QoS flows), RRC (connection control). Tolerates ~ms latency → centralizable 100+ km away; one CU pools tens of DUs. CU-CP/CU-UP split (E1) lets user plane sit at the edge while control stays central.'],
+ core:['5G Core (5GC)','Service-based architecture: AMF (mobility/registration), SMF (sessions), UPF (packet forwarding), plus PCF/UDM/NWDAF. Slicing and policy live here. The UPF is the placeable user-plane anchor — moving it toward the edge can cut user-plane RTT, subject to the rest of the latency budget.'],
+ edge:['Edge cloud / MEC','A local UPF + application compute a few km from the RAN. Physics: fiber ≈ 5 µs/km, so a 300 km detour to a national DC adds ~3 ms RTT — one term among several in an end-to-end budget. Whether a service needs the edge depends on its real latency/reliability target; edge is where cloud gaming, some industrial control and V2X servers may live.'],
+ net:['Internet / data centres','Beyond the UPF N6 interface. From here on it is ordinary IP engineering — peering, CDNs, transit. Most "5G is slow" complaints that survive RAN triage die here instead.'],
+ mano:['Management & Orchestration (MANO/SMO)','Configures, monitors, heals, and increasingly learns: OSS, SON, and in O-RAN the SMO with Non-RT RIC. Owns the O1/O2 interfaces, lifecycle of cloud RAN workloads, and the rApp ecosystem. The nervous system wrapped around the whole machine.']
+};
+document.querySelectorAll('#archSvg .anode').forEach(n=>{n.style.cursor='pointer';n.addEventListener('click',()=>{const d=ARCH[n.dataset.k];$('archDetail').innerHTML='<b>'+d[0]+'</b><br>'+d[1];});});
+
+/* ============================== W07 O-RAN explorer ============================== */
+const ORAN={
+ smo:['SMO — Service Management & Orchestration','The management umbrella: FCAPS over O1, cloud lifecycle over O2, policy via the Non-RT RIC it hosts. Where operator intent ("save energy overnight, protect this slice") enters the system.'],
+ nrtric:['Non-RT RIC (>1 s)','Lives in the SMO. Trains models, computes policies, sends them to the Near-RT RIC over A1 with enrichment data. Thinks in minutes-to-days: energy strategy, mobility parameter policy, slice SLA targets.'],
+ rapp:['rApps','Applications on the Non-RT RIC: traffic forecasting, MRO tuning, energy saving, anomaly detection, mMIMO pattern optimization. Vendor-agnostic in theory; the marketplace is the O-RAN business case.'],
+ nearric:['Near-RT RIC (10 ms – 1 s)','Subscribes to per-UE/per-cell state over E2, issues control back. Hosts xApps and mediates their conflicts. Its floor is physics: E2 round trip + processing ≈ several ms, while slots are 0.5 ms — so per-slot decisions stay in the O-DU.'],
+ xapp:['xApps','Near-real-time apps: traffic steering, QoS/slice enforcement, beam/mobility control, interference management. The conflict-mediation problem (two xApps, one knob) is a genuine open engineering front.'],
+ ocu:['O-CU','O-RAN\'s CU: RRC/PDCP/SDAP with E2 exposure so the RIC can see and steer bearer- and mobility-level behavior. CP/UP split over E1 as in 3GPP.'],
+ odu:['O-DU','Scheduler, HARQ, high-PHY. Everything faster than ~10 ms lives here, beyond the RIC — increasingly including embedded ML (CQI prediction, beam inference) running inline with the L1/L2 pipeline.'],
+ oru:['O-RU','Low-PHY + RF behind Open Fronthaul (7.2x). The interoperability battleground: RU↔DU multivendor pairing needs exact conformance on C/U/S/M planes and beamforming control methods.'],
+ cloud:['O-Cloud','The COTS substrate: Kubernetes, real-time tuned hosts, L1 accelerators (eASIC/FPGA/GPU), PTP/SyncE timing distribution. Where "cloud RAN" becomes concrete — and where µs-level timing meets IT-grade infrastructure.']
+};
+document.querySelectorAll('#oranSvg .onode').forEach(n=>{n.style.cursor='pointer';n.addEventListener('click',()=>{const d=ORAN[n.dataset.k];$('oranDetail').innerHTML='<b>'+d[0]+'</b><br>'+d[1];});});
+
+/* ============================== W02 coverage & capacity ============================== */
+(function(){
+ const cv=$('ccCanvas'),ctx=cv.getContext('2d');
+ const SITES=[[320,190],[180,110],[460,110],[180,270],[460,270],[320,60],[320,320],[80,190],[560,190],[80,60],[560,60],[80,320],[560,320],[200,190],[440,190],[320,130],[320,250],[120,130],[520,250]];
+ const st={f:3.5,n:7,bw:100,pwr:1,users:600,dem:20};
+ const KM=0.005; // 1 px = 5 m → canvas ≈ 3.2 × 1.9 km
+ function gains(f){return f<1?{g:14,clut:6}:f<10?{g:24,clut:16}:{g:29,clut:45};}
+ function rsrp(f,pwr,dkm){const G=gains(f);const P=[43,46,49][pwr]+G.g; // EIRP dBm
+   return P-(32.45+20*Math.log10(f*1000)+35*Math.log10(Math.max(dkm,0.02)))-G.clut-30;} // -30: per-RE-ish norm
+ function draw(){
+   const W=cv.width,H=cv.height,cell=8;const sites=SITES.slice(0,st.n);
+   const nF=-174+10*Math.log10(st.bw*1e6)+7-30;let covered=0,tot=0,seSum=0,seN=0;
+   for(let y=0;y<H;y+=cell)for(let x=0;x<W;x+=cell){
+     let best=-999,bi=-1,ilin=0;
+     for(let i=0;i<sites.length;i++){const d=Math.hypot(x-sites[i][0],y-sites[i][1])*KM;const r=rsrp(st.f,st.pwr,d);if(r>best){if(bi>=0)ilin+=dB2lin(best);best=r;bi=i;}else ilin+=dB2lin(r);}
+     tot++;
+     const act=clamp(st.users*st.dem/(st.n*st.bw*40),0.15,1); // neighbor activity
+     const sinr=best-lin2dB(ilin*act*0.35+dB2lin(nF));
+     let c;
+     if(best<-105){c='#3a3f45';}
+     else{covered++;seSum+=SE(sinr);seN++;
+       c=sinr>13?'#0E7C6B':sinr>3?'#E7C46B':'#C25327';}
+     ctx.fillStyle=c;ctx.globalAlpha=0.85;ctx.fillRect(x,y,cell,cell);ctx.globalAlpha=1;}
+   const seAvg=seN?seSum/seN:0;
+   const cap=st.bw*seAvg*0.75; // Mbps/cell incl. overhead+layers avg
+   const load=st.users*st.dem*0.12/(st.n*cap); // 12% simultaneous activity
+   sites.forEach((s,i)=>{ctx.fillStyle='#101B26';ctx.beginPath();ctx.arc(s[0],s[1],5,0,7);ctx.fill();
+     if(load>0.85){ctx.strokeStyle='#5A4FBF';ctx.lineWidth=3;ctx.beginPath();ctx.arc(s[0],s[1],11,0,7);ctx.stroke();}});
+   const cov=100*covered/tot;
+   $('ccCov').textContent=cov.toFixed(0)+'%';
+   $('ccCap').textContent=cap.toFixed(0)+' Mbps';
+   $('ccLoad').textContent=(load*100).toFixed(0)+'%';
+   $('ccVerdict').textContent=cov<85?'coverage':load>0.85?'capacity':'balanced';
+   $('ccVerdict').style.color=cov<85?'#C25327':load>0.85?'#5A4FBF':'#0E7C6B';
+ }
+ seg('ccBand',v=>{st.f=+v;$('ccBandO').textContent=v<1?'700 MHz':v+' GHz';draw();});
+ [['ccSites','n',v=>v,'ccSitesO',v=>v],['ccBw','bw',v=>+v,'ccBwO',v=>v+' MHz'],['ccPwr','pwr',v=>+v,'ccPwrO',v=>['low','medium','high'][v]],['ccUsers','users',v=>+v,'ccUsersO',v=>v],['ccDem','dem',v=>+v,'ccDemO',v=>v+' Mbps']]
+ .forEach(([id,k,f,oid,fmt])=>{$(id).addEventListener('input',e=>{st[k]=f(e.target.value);$(oid).textContent=fmt(e.target.value);draw();});});
+ draw();
+})();
+
+/* ============================== W03 beamforming ============================== */
+(function(){
+ const cv=$('bfCanvas'),ctx=cv.getContext('2d');
+ const st={N:16,steer:20,user:20,int:-40,intLvl:1,f:3.5,tilt:6};
+ function AFdB(th,st0,N){const u=Math.PI*(Math.sin(th*Math.PI/180)-Math.sin(st0*Math.PI/180));let re=0,im=0;
+   for(let n=0;n<N;n++){re+=Math.cos(n*u);im+=Math.sin(n*u);}return 20*Math.log10(Math.hypot(re,im)/N);}
+ function draw(){
+   const W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+   const cx=70,cy=H/2,R=Math.min(W-cx-30,H/2-14);
+   const elemG=8,arrG=10*Math.log10(st.N),tiltPen=Math.abs(st.tilt-6)*0.35;
+   // grid arcs
+   ctx.strokeStyle='#E3E9ED';ctx.lineWidth=1;
+   [-40,-30,-20,-10,0].forEach(g=>{const r=R*(g+45)/45;ctx.beginPath();ctx.arc(cx,cy,r,-Math.PI/2,Math.PI/2);ctx.stroke();});
+   // pattern
+   ctx.beginPath();
+   for(let a=-88;a<=88;a+=0.5){const g=clamp(AFdB(a,st.steer,st.N),-45,0);const r=R*(g+45)/45;
+     const x=cx+r*Math.cos(a*Math.PI/180),y=cy+r*Math.sin(a*Math.PI/180);a===-88?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+   ctx.closePath();ctx.fillStyle='rgba(14,124,107,.22)';ctx.fill();ctx.strokeStyle='#0E7C6B';ctx.lineWidth=2;ctx.stroke();
+   // BS
+   ctx.fillStyle='#101B26';ctx.fillRect(cx-6,cy-18,7,36);
+   // user & interferer rays
+   function ray(ang,col,lab){const x=cx+(R+16)*Math.cos(ang*Math.PI/180),y=cy+(R+16)*Math.sin(ang*Math.PI/180);
+     ctx.strokeStyle=col;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();ctx.setLineDash([]);
+     ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill();
+     ctx.font='11px IBM Plex Mono';ctx.fillText(lab,x-10,y-10);}
+   ray(st.user,'#101B26','UE');ray(st.int,'#C25327','INT');
+   // link math
+   const gU=AFdB(st.user,st.steer,st.N)+arrG+elemG-tiltPen;
+   const gI=AFdB(st.int,st.steer,st.N)+arrG+elemG-tiltPen;
+   const PL={0.7:104,3.5:118,28:136}[st.f];
+   const S=46+gU-PL;                              // dBm at UE
+   const Ipow=st.intLvl===0?-999:(-95+10*st.intLvl)+clamp(gI,-30,0)*0.4; // env interference shaped by rx filtering
+   const N0=-97;
+   const sinr=S-lin2dB(dB2lin(Ipow)+dB2lin(N0));
+   const hp=102/st.N*( st.f===28?1:1 );
+   $('bfGain').textContent=(gU).toFixed(1)+' dBi';
+   $('bfHpbw').textContent=hp.toFixed(1)+'°';
+   $('bfSinr').textContent=sinr.toFixed(1)+' dB';
+   $('bfTput').textContent=(SE(sinr)*100*1.6).toFixed(0)+' Mbps';
+   ctx.font='11px IBM Plex Mono';ctx.fillStyle='#3D4E5C';
+   ctx.fillText('sidelobes: energy you leak — and interference you admit',cx+10,H-8);
+ }
+ seg('bfBand',v=>{st.f=+v;$('bfBandO').textContent=v<1?'700 MHz':v+' GHz';draw();});
+ [['bfN','N','bfNO',v=>v],['bfSteer','steer','bfSteerO',v=>v+'°'],['bfUser','user','bfUserO',v=>v+'°'],['bfInt','int','bfIntO',v=>v+'°'],['bfIntLvl','intLvl','bfIntLvlO',v=>['off','med','high'][v]],['bfTilt','tilt','bfTiltO',v=>v+'°']]
+ .forEach(([id,k,oid,fmt])=>{$(id).addEventListener('input',e=>{st[k]=+e.target.value;$(oid).textContent=fmt(e.target.value);draw();});});
+ draw();
+})();
+
+
+/* ============================== W04 link adaptation ============================== */
+(function(){
+ const cv=$('laCanvas'),ctx=cv.getContext('2d');
+ const MCS=[
+  {i:0,m:'QPSK 0.12',se:0.23,req:-6},{i:2,m:'QPSK 0.19',se:0.38,req:-4},{i:4,m:'QPSK 0.3',se:0.6,req:-2},
+  {i:6,m:'QPSK 0.44',se:0.88,req:0},{i:8,m:'QPSK 0.59',se:1.18,req:2},{i:10,m:'16QAM 0.33',se:1.33,req:4},
+  {i:12,m:'16QAM 0.43',se:1.7,req:6},{i:14,m:'16QAM 0.54',se:2.16,req:8},{i:16,m:'64QAM 0.43',se:2.57,req:10},
+  {i:18,m:'64QAM 0.51',se:3.03,req:12},{i:20,m:'64QAM 0.6',se:3.61,req:14},{i:22,m:'64QAM 0.7',se:4.22,req:16},
+  {i:24,m:'256QAM 0.57',se:4.52,req:18},{i:25,m:'256QAM 0.62',se:5.0,req:20},{i:26,m:'256QAM 0.7',se:5.55,req:22},
+  {i:27,m:'256QAM 0.78',se:6.23,req:25},{i:28,m:'256QAM 0.93',se:7.4,req:28}];
+ const st={sinr:15,mob:30,rank:2,bw:100,int:2};
+ function draw(){
+   const back=Math.min(6,st.mob/45), eff=st.sinr-st.int*0.8-back;
+   let sel=MCS[0];MCS.forEach(m=>{if(m.req<=eff)sel=m;});
+   const margin=eff-sel.req;const bler=clamp(30*Math.exp(-0.9*margin),1,60);
+   const effRank=Math.min(st.rank,1+Math.floor(Math.max(0,eff)/9));
+   const tput=sel.se*st.bw*effRank*0.85;
+   $('laMcs').textContent=sel.m;
+   $('laSe').textContent=(sel.se*effRank).toFixed(2)+' b/s/Hz';
+   $('laTput').textContent=tput>1000?(tput/1000).toFixed(2)+' Gbps':tput.toFixed(0)+' Mbps';
+   $('laBler').textContent=bler.toFixed(0)+'%';
+   const rob=bler>22?'fragile':back>3||st.int>6?'margin-eating':'solid';
+   $('laRob').textContent=rob;$('laRob').style.color=rob==='fragile'?'#C25327':rob==='solid'?'#0E7C6B':'#8A6A1B';
+   // chart: SE vs SINR
+   const W=cv.width,H=cv.height,x0=46,y0=H-34,x1=W-16,y1=14;
+   ctx.clearRect(0,0,W,H);
+   const X=s=>x0+(s+8)/(40)*(x1-x0), Y=v=>y0-(v/8)*(y0-y1);
+   ctx.strokeStyle='#C9D3DB';ctx.strokeRect(x0,y1,x1-x0,y0-y1);
+   ctx.font='10px IBM Plex Mono';ctx.fillStyle='#8a97a1';
+   for(let s=-8;s<=32;s+=8){ctx.fillText(s,X(s)-6,y0+14);}
+   ctx.fillText('SINR (dB) →',x1-80,y0+26);ctx.save();ctx.translate(14,y0-40);ctx.rotate(-Math.PI/2);ctx.fillText('SE b/s/Hz',0,0);ctx.restore();
+   // Shannon
+   ctx.strokeStyle='#5A4FBF';ctx.setLineDash([5,4]);ctx.beginPath();
+   for(let s=-8;s<=32;s+=0.5){const v=Math.log2(1+dB2lin(s));s===-8?ctx.moveTo(X(s),Y(Math.min(v,8))):ctx.lineTo(X(s),Y(Math.min(v,8)));}
+   ctx.stroke();ctx.setLineDash([]);
+   ctx.fillStyle='#5A4FBF';ctx.fillText('Shannon',X(24)+4,Y(Math.log2(1+dB2lin(26)))-6);
+   // MCS staircase
+   ctx.strokeStyle='#0E7C6B';ctx.lineWidth=2;ctx.beginPath();
+   for(let k=0;k<MCS.length;k++){const a=MCS[k].req,b=k<MCS.length-1?MCS[k+1].req:32;
+     ctx.moveTo(X(a),Y(MCS[k].se));ctx.lineTo(X(b),Y(MCS[k].se));if(k<MCS.length-1)ctx.lineTo(X(b),Y(MCS[k+1].se));}
+   ctx.stroke();ctx.lineWidth=1;
+   // raw vs effective SINR markers
+   ctx.strokeStyle='#C25327';ctx.beginPath();ctx.moveTo(X(eff),y0);ctx.lineTo(X(eff),y1);ctx.stroke();
+   ctx.fillStyle='#C25327';ctx.fillText('effective',X(eff)+4,y1+12);
+   ctx.strokeStyle='#8a97a1';ctx.setLineDash([2,3]);ctx.beginPath();ctx.moveTo(X(st.sinr),y0);ctx.lineTo(X(st.sinr),y1);ctx.stroke();ctx.setLineDash([]);
+   ctx.fillStyle='#8a97a1';ctx.fillText('reported',X(st.sinr)+4,y1+26);
+   ctx.fillStyle='#101B26';ctx.beginPath();ctx.arc(X(eff),Y(sel.se),5,0,7);ctx.fill();
+ }
+ [['laSinr','sinr','laSinrO',v=>v+' dB'],['laMob','mob','laMobO',v=>v+' km/h'],['laRank','rank','laRankO',v=>v],['laBw','bw','laBwO',v=>v+' MHz'],['laInt','int','laIntO',v=>v<3?'low':v<7?'med':'high']]
+ .forEach(([id,k,oid,fmt])=>{$(id).addEventListener('input',e=>{st[k]=+e.target.value;$(oid).textContent=fmt(+e.target.value);draw();});});
+ draw();
+})();
+
+/* ============================== W05 scheduler ============================== */
+(function(){
+ const cv=$('schCanvas'),ctx=cv.getContext('2d');
+ const COLS=['#0E7C6B','#5A4FBF','#C25327','#2E86AB','#8A6A1B','#B33771','#4A6B3C','#7A4A2B','#3C6E71','#9A4FBF','#5C7A1B','#71453C'];
+ const st={pol:'pf',N:6,edge:2,urllc:0,load:2};
+ let users=[],hist=[],t=0,urq=0,urLat=1;
+ function initU(){users=[];for(let i=0;i<st.N;i++){const edge=i<st.edge;
+   users.push({base:edge?1.2:5+Math.random()*3,avg:0.1,tput:0,fade:1,edge});}hist=[];t=0;}
+ function tti(){
+   const RB=20,demand=[0.35,0.7,1][st.load];
+   users.forEach(u=>{u.fade=clamp(u.fade*0.85+0.15*(-Math.log(Math.random())),0.05,4);u.rate=u.base*u.fade;u.active=Math.random()<demand;u.got=0;});
+   const col=new Array(RB).fill(-1);
+   let urNow=false;
+   if(st.urllc&&Math.random()<0.15){urNow=true;urq++;}
+   for(let r=0;r<RB;r++){
+     if(urNow&&r<3){col[r]=-2;continue;} // URLLC preemption
+     let bi=-1,bm=-1;
+     users.forEach((u,i)=>{if(!u.active)return;let m;
+       if(st.pol==='rr')m=1/(1e-6+u.avg*0+((t+i)%st.N===i?0:1))+Math.random()*0.01, m=((t%st.N)===i)?9:Math.random()*0.1;
+       else if(st.pol==='max')m=u.rate;
+       else m=u.rate/Math.max(u.avg,0.05);
+       if(m>bm){bm=m;bi=i;}});
+     if(bi>=0){col[r]=bi;users[bi].got+=users[bi].rate/RB;}}
+   users.forEach(u=>{u.avg=0.985*u.avg+0.015*u.got;u.tput=0.97*u.tput+0.03*u.got;});
+   if(urNow){urLat=0.97*urLat+0.03*(st.urllc?0.5:8);urq=0;}
+   hist.push(col);if(hist.length>46)hist.shift();t++;
+ }
+ function draw(){
+   const W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+   // grid
+   const gw=8,gh=10,gx=10,gy=18;
+   ctx.font='10px IBM Plex Mono';ctx.fillStyle='#8a97a1';
+   ctx.fillText('freq →  (RB groups)   time →',gx,12);
+   hist.forEach((col,ti)=>col.forEach((u,r)=>{ctx.fillStyle=u===-2?'#101B26':u<0?'#EDF1F4':COLS[u%12];
+     ctx.fillRect(gx+ti*gw,gy+r*gh,gw-1,gh-1);}));
+   if(st.urllc){ctx.fillStyle='#101B26';ctx.fillText('■ = URLLC mini-slot pre-emption',gx,gy+20*gh+14);}
+   // bars
+   const bx=420,bw=190;
+   ctx.fillStyle='#8a97a1';ctx.fillText('avg throughput per user',bx,12);
+   const mx=Math.max(...users.map(u=>u.tput),0.1);
+   users.forEach((u,i)=>{const y=gy+i*24;
+     ctx.fillStyle=COLS[i%12];ctx.fillRect(bx,y,bw*u.tput/mx,14);
+     ctx.fillStyle='#3D4E5C';ctx.fillText('U'+(i+1)+(u.edge?' (edge)':''),bx,y+11<gy+11?y:y+11);
+     ctx.fillStyle='#101B26';ctx.fillText((u.tput*10).toFixed(1),bx+bw*u.tput/mx+4,y+11);});
+   const cell=users.reduce((s,u)=>s+u.tput,0);
+   const jain=Math.pow(users.reduce((s,u)=>s+u.tput,0),2)/(users.length*users.reduce((s,u)=>s+u.tput*u.tput,0)+1e-9);
+   $('schCell').textContent=(cell*10).toFixed(0)+' Mbps';
+   $('schJain').textContent=jain.toFixed(2);
+   $('schEdgeT').textContent=(Math.min(...users.map(u=>u.tput))*10).toFixed(1)+' Mbps';
+   $('schLat').textContent=st.urllc?urLat.toFixed(1)+' ms':'—';
+ }
+ let last=0;
+ function loop(ts){if(ts-last>60){tti();draw();last=ts;}requestAnimationFrame(loop);}
+ seg('schPol',v=>{st.pol=v;});
+ seg('schUrllc',v=>{st.urllc=+v;});
+ $('schN').addEventListener('input',e=>{st.N=+e.target.value;$('schNO').textContent=st.N;st.edge=Math.min(st.edge,st.N);initU();});
+ $('schEdge').addEventListener('input',e=>{st.edge=Math.min(+e.target.value,st.N);$('schEdgeO').textContent=st.edge;initU();});
+ $('schLoad').addEventListener('input',e=>{st.load=+e.target.value;$('schLoadO').textContent=['low','med','high'][st.load];});
+ $('schReset').addEventListener('click',initU);
+ initU();requestAnimationFrame(loop);
+})();
+
+/* ============================== W06 handover ============================== */
+(function(){
+ const cv=$('hoCanvas'),ctx=cv.getContext('2d');
+ const st={v:60,gap:1000,hyst:3,ttt:160,sh:6};
+ let seed=1;function rnd(){seed=(seed*16807)%2147483647;return seed/2147483647;}
+ function gauss(){return Math.sqrt(-2*Math.log(rnd()+1e-9))*Math.cos(2*Math.PI*rnd());}
+ function run(){
+   const L=3*st.gap+800,step=5,n=Math.floor(L/step);
+   const cells=[400,400+st.gap,400+2*st.gap,400+3*st.gap];
+   // correlated shadowing per cell (corr dist ~60 m)
+   const sh=cells.map(()=>{const a=[];let v=0;for(let i=0;i<n;i++){v=v*Math.exp(-step/60)+gauss()*st.sh*Math.sqrt(1-Math.exp(-2*step/60));a.push(v);}return a;});
+   const rs=cells.map((c,ci)=>{const a=[];for(let i=0;i<n;i++){const d=Math.max(Math.abs(i*step-c),30);
+     a.push(-18-30*Math.log10(d)+sh[ci][i]);}return a;});
+   // L3 filtering (~30 m EMA) — A3 decisions use filtered RSRP, RLF uses raw
+   const al=Math.exp(-step/30);
+   const rf=rs.map(a=>{const o=[];let v=a[0];for(let i=0;i<n;i++){v=al*v+(1-al)*a[i];o.push(v);}return o;});
+   // A3 with TTT
+   let srv=0,timer=0,cand=-1;const events=[];const serving=[];
+   const tttDist=st.v/3.6*st.ttt/1000; // metres covered in TTT
+   for(let i=0;i<n;i++){
+     let bi=0;for(let c=1;c<cells.length;c++)if(rf[c][i]>rf[bi][i])bi=c;
+     if(bi!==srv&&rf[bi][i]>rf[srv][i]+st.hyst){
+       if(cand===bi)timer+=step;else{cand=bi;timer=0;}
+       if(timer>=tttDist){events.push({i,from:srv,to:bi,srvRs:rs[srv][i]});srv=bi;cand=-1;timer=0;}
+     }else{cand=-1;timer=0;}
+     serving.push(srv);}
+   // metrics
+   let pp=0;for(let k=1;k<events.length;k++){const dt=(events[k].i-events[k-1].i)*step/(st.v/3.6);
+     if(events[k].to===events[k-1].from&&dt<3)pp++;}
+   let lateRisk=0;events.forEach(e=>{if(e.srvRs<-110)lateRisk++;});
+   // also risk of RLF between HOs: serving dips below -115
+   let rlf=0;for(let i=0;i<n;i++)if(rs[serving[i]][i]<-114)rlf++;
+   const failPct=clamp(lateRisk*15+rlf/n*100*3,0,95);
+   // draw
+   const W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+   const x0=40,x1=W-14,y0=H-56,y1=14;
+   const X=i=>x0+i/(n-1)*(x1-x0), Y=r=>y0-(r+125)/70*(y0-y1);
+   ctx.strokeStyle='#C9D3DB';ctx.strokeRect(x0,y1,x1-x0,y0-y1);
+   ctx.font='10px IBM Plex Mono';ctx.fillStyle='#8a97a1';
+   [-70,-90,-110].forEach(r=>{ctx.fillText(r,6,Y(r)+3);ctx.strokeStyle='#EDF1F4';ctx.beginPath();ctx.moveTo(x0,Y(r));ctx.lineTo(x1,Y(r));ctx.stroke();});
+   const cols=['#0E7C6B','#5A4FBF','#C25327','#2E86AB'];
+   rs.forEach((a,ci)=>{ctx.strokeStyle=cols[ci];ctx.globalAlpha=0.75;ctx.beginPath();
+     for(let i=0;i<n;i++){const x=X(i),y=Y(clamp(a[i],-125,-55));i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.stroke();ctx.globalAlpha=1;});
+   // serving band
+   for(let i=0;i<n;i++){ctx.fillStyle=cols[serving[i]];ctx.fillRect(X(i),y0+8,(x1-x0)/n+1,12);}
+   ctx.fillStyle='#3D4E5C';ctx.fillText('serving cell →',x0,y0+34);
+   ctx.fillText('RSRP (dBm) vs position — RLF zone below −114',x0+110,y0+34);
+   events.forEach(e=>{ctx.strokeStyle='#101B26';ctx.beginPath();ctx.moveTo(X(e.i),y0);ctx.lineTo(X(e.i),y1);ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);});
+   $('hoCount').textContent=events.length;
+   $('hoPp').textContent=pp;
+   $('hoFail').textContent=failPct.toFixed(0)+'%';
+   $('hoFail').style.color=failPct>30?'#C25327':'#0E7C6B';
+   const verdict=pp>1?'too twitchy':failPct>30?'too sticky':'well tuned';
+   $('hoVerdict').textContent=verdict;
+   $('hoVerdict').style.color=verdict==='well tuned'?'#0E7C6B':'#C25327';
+ }
+ [['hoSpd','v','hoSpdO',v=>v+' km/h'],['hoGap','gap','hoGapO',v=>(v/1000).toFixed(1)+' km'],['hoHyst','hyst','hoHystO',v=>v+' dB'],['hoTtt','ttt','hoTttO',v=>v+' ms'],['hoSh','sh','hoShO',v=>v+' dB']]
+ .forEach(([id,k,oid,fmt])=>{$(id).addEventListener('input',e=>{st[k]=+e.target.value;$(oid).textContent=fmt(+e.target.value);run();});});
+ $('hoRun').addEventListener('click',()=>{seed=Math.floor(Math.random()*1e9)+1;run();});
+ run();
+})();
+
+
+/* ============================== W08 digital twin ============================== */
+(function(){
+ const cv=$('dtCanvas'),ctx=cv.getContext('2d');
+ const MACRO=[[110,90],[330,70],[540,100],[190,260],[440,270]]; // S1..S5
+ const SMALL=[[320,180],[500,190],[240,150],[400,120]];
+ const st={traffic:0,bw:100,small:0,fail:-1,mob:1};
+ let users=[],t=0;
+ function spawn(){users=[];const n=64;
+   for(let i=0;i<n;i++){let x,y;
+     if(st.traffic===2&&i<n*0.55){x=330+(Math.random()-0.5)*130;y=90+(Math.random()-0.5)*90;} // event at S2
+     else if(st.traffic===1&&i<n*0.5){x=100+Math.random()*460;y=200+(Math.random()-0.5)*50;} // rush corridor
+     else{x=40+Math.random()*570;y=40+Math.random()*290;}
+     users.push({x,y,dx:(Math.random()-0.5)*0.4,dy:(Math.random()-0.5)*0.4,dem:0.5+Math.random()});}}
+ function step(){
+   if(st.mob)users.forEach(u=>{u.x=clamp(u.x+u.dx,30,610);u.y=clamp(u.y+u.dy,30,330);
+     if(Math.random()<0.02){u.dx=(Math.random()-0.5)*0.5;u.dy=(Math.random()-0.5)*0.5;}});
+   const sites=[];
+   MACRO.forEach((p,i)=>{if(i!==st.fail/1&&st.fail!==i)sites.push({x:p[0],y:p[1],r:150,cap:st.bw*0.9,macro:true,id:'S'+(i+1),load:0});});
+   // note: fail values are 0,2,4 → S1,S3,S5
+   for(let k=0;k<st.small;k++)sites.push({x:SMALL[k][0],y:SMALL[k][1],r:62,cap:st.bw*0.6,macro:false,id:'sc'+(k+1),load:0});
+   const mult=[1,1.6,2.4][st.traffic];
+   let holes=0;
+   users.forEach(u=>{let best=null,bd=1e9;
+     sites.forEach(s=>{const d=Math.hypot(u.x-s.x,u.y-s.y)/(s.macro?1:0.5);if(d<bd){bd=d;best=s;}});
+     u.srv=best;u.hole=!best||Math.hypot(u.x-best.x,u.y-best.y)>best.r;
+     if(u.hole)holes++;else best.load+=u.dem*mult*3;});
+   return {sites,holes,mult};
+ }
+ function draw(){
+   const {sites,holes}=step();
+   const W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+   ctx.fillStyle='#F7FAFB';ctx.fillRect(0,0,W,H);
+   // coverage
+   sites.forEach(s=>{const util=s.load/s.cap;
+     const col=util>0.9?'#5A4FBF':util>0.65?'#E7C46B':'#0E7C6B';
+     ctx.globalAlpha=0.13;ctx.fillStyle=col;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,7);ctx.fill();ctx.globalAlpha=1;
+     ctx.strokeStyle=col;ctx.lineWidth=util>0.9?3:1.4;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,7);ctx.stroke();ctx.lineWidth=1;
+     ctx.fillStyle='#101B26';ctx.beginPath();ctx.arc(s.x,s.y,s.macro?6:4,0,7);ctx.fill();
+     ctx.font='10px IBM Plex Mono';ctx.fillText(s.id+' '+(util*100).toFixed(0)+'%',s.x+8,s.y-6);});
+   // failed site marker
+   if(st.fail>=0){const p=MACRO[st.fail];ctx.strokeStyle='#C25327';ctx.lineWidth=2;
+     ctx.beginPath();ctx.moveTo(p[0]-9,p[1]-9);ctx.lineTo(p[0]+9,p[1]+9);ctx.moveTo(p[0]+9,p[1]-9);ctx.lineTo(p[0]-9,p[1]+9);ctx.stroke();ctx.lineWidth=1;
+     ctx.font='10px IBM Plex Mono';ctx.fillStyle='#C25327';ctx.fillText('FAILED',p[0]-18,p[1]+22);}
+   users.forEach(u=>{ctx.fillStyle=u.hole?'#101B26':'#3D4E5C';ctx.globalAlpha=u.hole?1:0.55;
+     ctx.beginPath();ctx.arc(u.x,u.y,u.hole?3.4:2.4,0,7);ctx.fill();ctx.globalAlpha=1;});
+   const cong=sites.filter(s=>s.load/s.cap>0.9).length;
+   const good=users.filter(u=>!u.hole&&u.srv&&u.srv.load/u.srv.cap<0.9).length;
+   const qoe=100*good/users.length;
+   $('dtCong').textContent=cong;
+   $('dtHole').textContent=holes;
+   $('dtQoe').textContent=qoe.toFixed(0)+'%';
+   const risk=qoe>85?'low':qoe>60?'elevated':'high';
+   $('dtRisk').textContent=risk;$('dtRisk').style.color=risk==='low'?'#0E7C6B':risk==='high'?'#C25327':'#8A6A1B';
+   // recommendations
+   const recs=[];
+   if(st.fail>=0)recs.push('compensate S'+(st.fail+1)+' outage: uptilt neighbors + temporary power boost, prioritize repair (impact: '+holes+' users uncovered)');
+   if(cong>0)recs.push(cong+' cell(s) >90% PRB: pre-emptive load balancing; '+(st.small<4?'deploy small cell at hotspot':'raise spectrum')+(st.bw<200?' or widen carrier':''));
+   if(holes>4&&st.fail<0)recs.push('persistent coverage holes: check tilt/height or add low-band layer');
+   if(!recs.length)recs.push('baseline healthy — safe window for maintenance or energy-saving policy');
+   $('dtRec').innerHTML='<b>Twin recommendation:</b> '+recs.join(' · ');
+ }
+ seg('dtTraffic',v=>{st.traffic=+v;spawn();});
+ seg('dtFail',v=>{st.fail=+v;});
+ seg('dtMob',v=>{st.mob=+v;$('dtMobO').textContent=+v?'on':'frozen';});
+ $('dtBw').addEventListener('input',e=>{st.bw=+e.target.value;$('dtBwO').textContent=st.bw+' MHz';});
+ $('dtSmall').addEventListener('input',e=>{st.small=+e.target.value;$('dtSmallO').textContent=st.small;});
+ spawn();
+ let last=0;function loop(ts){if(ts-last>120){draw();last=ts;}requestAnimationFrame(loop);}
+ requestAnimationFrame(loop);
+})();
+
+/* ============================== W09 energy ============================== */
+(function(){
+ const cv=$('enCanvas'),ctx=cv.getContext('2d');
+ const st={load:35,car:3,ant:0,sleep:0,cov:1};
+ function draw(){
+   const antN=[64,32,16][st.ant];
+   const Pb=[600,380,250][st.ant],Pd=[520,310,190][st.ant];
+   const load=st.load/100;
+   let sleepF=1;
+   if(st.sleep===1)sleepF=1-0.15*(1-load);
+   if(st.sleep===2)sleepF=1-0.42*(1-load);
+   // strict coverage: one carrier can never deep-sleep
+   let P=0,Pmax=4*(600+520);
+   for(let c=0;c<st.car;c++){
+     const f=(c===0&&st.cov===1)?Math.max(sleepF,0.9):sleepF;
+     P+=Pb*f+Pd*load;}
+   P*=1.12; // cooling/rectifier overhead
+   Pmax*=1.12;
+   const save=100*(1-P/Pmax);
+   const capMax=st.car*[1,0.62,0.38][st.ant]; // relative units: one 64T carrier = 1.0
+   const head=capMax-load*1.2;          // demand: 1.2 carrier-units at 100% load
+   let risk=0;
+   if(head<0.3)risk+=2;if(head<0)risk+=2;
+   if(st.sleep===2)risk+=1;if(st.cov===0)risk+=1;if(st.ant===2&&load>0.5)risk+=1;
+   const riskL=risk<=1?'low':risk<=3?'medium':'high';
+   $('enPwr').textContent=P.toFixed(0)+' W';
+   $('enSave').textContent=save.toFixed(0)+'%';
+   $('enCap').textContent=head>0?'+'+(head/capMax*100).toFixed(0)+'%':'DEFICIT';
+   $('enCap').style.color=head>0?'#0E7C6B':'#C25327';
+   $('enRiskV').textContent=riskL;
+   $('enRiskV').style.color=riskL==='low'?'#0E7C6B':riskL==='high'?'#C25327':'#8A6A1B';
+   $('enAntO').textContent=antN;
+   // stacked bar
+   const W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+   const x0=140,bw2=W-x0-180,y=70,h=64;
+   const stat=st.car*Pb*((st.cov===1?Math.max(sleepF,0.9):sleepF))*1.12;
+   const dyn=P-Math.min(stat,P);
+   ctx.font='12px IBM Plex Mono';
+   ctx.fillStyle='#3D4E5C';ctx.fillText('this policy',20,y+h/2+4);
+   ctx.fillStyle='#101B26';ctx.fillRect(x0,y,bw2*Math.min(stat,P)/Pmax,h);
+   ctx.fillStyle='#0E7C6B';ctx.fillRect(x0+bw2*Math.min(stat,P)/Pmax,y,bw2*dyn/Pmax,h);
+   ctx.fillStyle='#101B26';ctx.fillText(P.toFixed(0)+' W',x0+bw2*P/Pmax+8,y+h/2+4);
+   ctx.fillStyle='#3D4E5C';ctx.fillText('all-on max',20,y+h+46);
+   ctx.strokeStyle='#8a97a1';ctx.setLineDash([4,3]);ctx.strokeRect(x0,y+h+22,bw2,36);ctx.setLineDash([]);
+   ctx.fillText(Pmax.toFixed(0)+' W',x0+bw2+8,y+h+45);
+   ctx.fillStyle='#101B26';ctx.fillRect(x0,H-32,12,10);ctx.fillStyle='#3D4E5C';ctx.fillText('load-independent (the enemy)',x0+18,H-23);
+   ctx.fillStyle='#0E7C6B';ctx.fillRect(x0+280,H-32,12,10);ctx.fillStyle='#3D4E5C';ctx.fillText('traffic-proportional',x0+298,H-23);
+ }
+ seg('enSleep',v=>{st.sleep=+v;draw();});
+ seg('enCov',v=>{st.cov=+v;$('enCovO').textContent=+v?'strict':'relaxed';draw();});
+ $('enLoad').addEventListener('input',e=>{st.load=+e.target.value;$('enLoadO').textContent=st.load+'%';draw();});
+ $('enCar').addEventListener('input',e=>{st.car=+e.target.value;$('enCarO').textContent=st.car;draw();});
+ $('enAnt').addEventListener('input',e=>{st.ant=+e.target.value;draw();});
+ draw();
+})();
+
+/* ============================== W10 evolution map ============================== */
+(function(){
+ const cv=$('evCanvas'),ctx=cv.getContext('2d');
+ const gens=['4G LTE','5G R15/16','R17','5G-A R18/19','6G R21+'];
+ const tracks=[
+  {name:'Spectrum',col:'#C25327',cells:[
+   '≤2.6 GHz, 20 MHz carriers, CA to ~100 MHz','FR1 to 7.1 GHz + FR2 mmWave; 100–400 MHz carriers; DSS bridges LTE','FR2-2 to 71 GHz (960 kHz SCS); NTN bands','FR3 (7–24 GHz) studies; UL enhancements attack the TDD bottleneck; SBFD study','7–15 GHz golden band as workhorse; sub-THz for short-range/backhaul; shared sensing spectrum']},
+  {name:'MIMO / antennas',col:'#0E7C6B',cells:[
+   '2–8 ports, codebook feedback','Massive MIMO mainstream: 32/64TR, SRS reciprocity, MU-MIMO, FR2 beam mgmt','More layers, multi-panel UE, mTRP','Coherent multi-TRP, UL 8 layers, AI-assisted CSI/beam prediction','Giant arrays @ FR3; cell-free/distributed MIMO candidate; RIS niche']},
+  {name:'Latency & duplex',col:'#2E86AB',cells:[
+   '~10–20 ms; 1 ms TTI; FDD-centric','Mini-slots, flexible TDD, URLLC toolbox → ~1 ms','IIoT determinism, TSN integration','XR-aware scheduling; SBFD study to soften TDD; L1/L2 mobility (LTM)','0.1 ms targets; full-duplex ambitions; deterministic 3D networking']},
+  {name:'AI / ML',col:'#5A4FBF',cells:[
+   'SON rules (ANR, MRO heuristics)','Data-driven rApps emerge; NWDAF in core; O-RAN RIC defined','ML for positioning studies; RIC ecosystems in trials','AI/ML air interface standardized: CSI compression, beam prediction, positioning; AI-RAN compute convergence','AI-native: learning inside every loop; twins as training gyms; intent-driven networks']},
+  {name:'Sensing (ISAC)',col:'#8A6A1B',cells:[
+   '—','Precise positioning (PRS) as a service','cm-level positioning enhancements','ISAC channel-model & use-case study items (Rel-19)','Sensing-native: network as multistatic radar; sensing KPIs beside throughput']},
+  {name:'Architecture',col:'#101B26',cells:[
+   'Monolithic eNB + EPC','gNB split CU/DU/RU; SBA core; NSA→SA; slicing; O-RAN interfaces','Edge-native, RedCap, NTN integrated','vRAN/Cloud RAN mainstream; energy (NES) first-class; eRedCap; ambient IoT study','Cloud-native by default; compute-network convergence; NTN as peer layer; subnetworks']}];
+ const nodes=[];
+ function draw(sel){
+   const W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);nodes.length=0;
+   const x0=150,x1=W-30,rowH=(H-70)/tracks.length;
+   ctx.font='11px IBM Plex Mono';
+   gens.forEach((g,i)=>{const x=x0+i*(x1-x0)/(gens.length-1);
+     ctx.fillStyle='#3D4E5C';ctx.textAlign='center';ctx.fillText(g,x,20);ctx.textAlign='left';
+     ctx.strokeStyle='#EDF1F4';ctx.beginPath();ctx.moveTo(x,30);ctx.lineTo(x,H-24);ctx.stroke();});
+   tracks.forEach((tr,ti)=>{const y=52+ti*rowH+rowH/2;
+     ctx.fillStyle=tr.col;ctx.font='600 11px IBM Plex Mono';ctx.fillText(tr.name,12,y+4);ctx.font='11px IBM Plex Mono';
+     ctx.strokeStyle=tr.col;ctx.globalAlpha=0.35;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();ctx.globalAlpha=1;ctx.lineWidth=1;
+     gens.forEach((g,gi)=>{const x=x0+gi*(x1-x0)/(gens.length-1);
+       const isSel=sel&&sel.t===ti&&sel.g===gi;const dead=tr.cells[gi]==='—';
+       ctx.fillStyle=dead?'#EDF1F4':isSel?tr.col:'#fff';
+       ctx.strokeStyle=tr.col;ctx.lineWidth=isSel?3:1.6;
+       ctx.beginPath();ctx.arc(x,y,isSel?10:7,0,7);ctx.fill();ctx.stroke();ctx.lineWidth=1;
+       nodes.push({x,y,t:ti,g:gi});});});
+ }
+ cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect();
+   const x=(e.clientX-r.left)*cv.width/r.width,y=(e.clientY-r.top)*cv.height/r.height;
+   let best=null,bd=400;nodes.forEach(n=>{const d=(n.x-x)**2+(n.y-y)**2;if(d<bd){bd=d;best=n;}});
+   if(best){draw(best);const tr=tracks[best.t];
+     $('evDetail').innerHTML='<b style="color:'+tr.col+'">'+tr.name+' · '+gens[best.g]+'</b><br>'+tr.cells[best.g];}});
+ draw(null);
+})();
+</script>
+</body>
+</html>
